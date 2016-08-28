@@ -1,0 +1,25 @@
+From cb85779ce53e2c0752e377985befe77e42e6b4e8 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Sat, 27 Aug 2016 11:20:35 +0800
+Subject: [PATCH 2/2] Define QCOM_BOARD_PLATFORMS (as msm8974 only)
+
+Change-Id: I2aa0e7884a54b15d52739ddbc53ecd0005c1976c
+---
+ Android.mk | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Android.mk b/Android.mk
+index d20fed0..05e0e65 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -13,6 +13,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++QCOM_BOARD_PLATFORMS:=msm8974
+ ifneq (,$(filter $(QCOM_BOARD_PLATFORMS),$(TARGET_BOARD_PLATFORM)))
+ 
+ include $(all-subdir-makefiles)
+-- 
+2.1.4
+

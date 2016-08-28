@@ -1,0 +1,67 @@
+From 8c3e3b723f5bd19375b47efc37772ff510d3ad59 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Sat, 27 Aug 2016 10:48:06 +0800
+Subject: [PATCH 2/2] [DIRTY] Change GnssSvStatus to GnssSvStatxx to avoid
+ conflicts
+
+Need corresponding change in GPS HAL.
+
+Change-Id: Ic58d9d7faf847f1e49b7a453728cbe41eafa2e6e
+---
+ bacon/proprietary/lib/libloc_api_v02.so            | Bin 106644 -> 106644 bytes
+ bacon/proprietary/vendor/bin/slim_daemon           | Bin 149288 -> 149288 bytes
+ bacon/proprietary/vendor/lib/liblbs_core.so        | Bin 128764 -> 128764 bytes
+ bacon/proprietary/vendor/lib/liblocationservice.so | Bin 399604 -> 399604 bytes
+ bacon/proprietary/vendor/lib/libulp2.so            | Bin 100152 -> 100152 bytes
+ 5 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/bacon/proprietary/lib/libloc_api_v02.so b/bacon/proprietary/lib/libloc_api_v02.so
+index 325e9a3b440813a98684b44e1b3ac5745fcd2ea1..21b2823b58855280952bee1d4f4ec4336ba6229e 100644
+GIT binary patch
+delta 21
+ccmbPokZsCAwhbi;OcfQ)WeVHN6d2_i0AP{_@&Et;
+
+delta 21
+ccmbPokZsCAwhbi;Or^!mWeVHN6d2_i0AN1{>Hq)$
+
+diff --git a/bacon/proprietary/vendor/bin/slim_daemon b/bacon/proprietary/vendor/bin/slim_daemon
+index 62bb93d56c50de92312499d4c6b612944967df45..bdfc9a7c15ac255760698e3026d9128b1c022c53 100644
+GIT binary patch
+delta 25
+gcmZ3{$GM`9b3?iaQ$<B{rbv6H2;=rl5vKh{0DCS7$N&HU
+
+delta 25
+gcmZ3{$GM`9b3?iaQ)zK?rbv6H2;=rl5vKh{0D8L!zyJUM
+
+diff --git a/bacon/proprietary/vendor/lib/liblbs_core.so b/bacon/proprietary/vendor/lib/liblbs_core.so
+index 81d9d117f5efb3d2de338b6c33d3dedeecf709ab..0ae5852a96b2f1895fc5e40842ab5e16bc3adaf0 100644
+GIT binary patch
+delta 25
+hcmezKmi^CL_6?o7OcfQA8?7ap7wc|ctjidA5&)(z3!MM}
+
+delta 25
+hcmezKmi^CL_6?o7Or^z>8?7ap7wc|ctjidA5&)&V3zYx>
+
+diff --git a/bacon/proprietary/vendor/lib/liblocationservice.so b/bacon/proprietary/vendor/lib/liblocationservice.so
+index 9b2595d07a66f4c5f2e034b0cc63214ea62d7974..2ea0b0c27967182cf8a36375c670cbd53a3dca95 100644
+GIT binary patch
+delta 36
+ncmeyeQR2%+iH0qVk9C+TD%zjwFaj|X5HkZY%l4-_to&~PIExSC
+
+delta 36
+ncmeyeQR2%+iH0qVk9C+zi`$>-Faj|X5HkZY%l4-_to&~PH_#8;
+
+diff --git a/bacon/proprietary/vendor/lib/libulp2.so b/bacon/proprietary/vendor/lib/libulp2.so
+index b2fc38edb5d2c6b0d95748f214a876e8037521d3..d701cd2140eb1bdef72f2eace03a8f7b5c451d31 100644
+GIT binary patch
+delta 50
+zcmdnd$F`%7ZNokZrizN@0}|U0NHE%&1KHaG7+J(vDk>Dzrt60>icP<e$jG@}J&jRN
+F5dhQ55IO(=
+
+delta 50
+zcmdnd$F`%7ZNokZrqbf(0}|U0NHE%&1KHaG7+J(vN{bcLrt60>icP<e$jG@}J&jRN
+F5dhH{5F!8o
+
+-- 
+2.1.4
+

@@ -1,0 +1,23 @@
+From 851acd57993a9b88d9b42c14d29f47fc2339fc7c Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Sat, 27 Aug 2016 11:14:32 +0800
+Subject: [PATCH] Revert "Makefiles: Use project pathmap to determine build
+ eligibility"
+
+This reverts commit 5451bb05347d541eb0b65aac6739a25da338e3b3.
+---
+ Android.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Android.mk b/Android.mk
+index e1c3023..a094756 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -1,3 +1,3 @@
+-ifeq ($(call my-dir),$(call project-path-for,qcom-dataservices))
++ifeq ($(BOARD_USES_QCOM_HARDWARE),true)
+ include $(call all-subdir-makefiles)
+ endif
+-- 
+2.1.4
+

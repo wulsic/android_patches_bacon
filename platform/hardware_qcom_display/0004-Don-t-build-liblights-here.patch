@@ -1,0 +1,30 @@
+From 3377851038e65efb16f673899ff20cb8d1a43b6b Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Fri, 26 Aug 2016 16:42:29 +0800
+Subject: [PATCH 4/5] Don't build liblights here
+
+Change-Id: I49d0ce0f59a3061aa3cacd883cf682e0b9cffef4
+---
+ msm8974/liblight/Android.mk | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/msm8974/liblight/Android.mk b/msm8974/liblight/Android.mk
+index 40115d5..ac95502 100644
+--- a/msm8974/liblight/Android.mk
++++ b/msm8974/liblight/Android.mk
+@@ -12,6 +12,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
++ifneq ($(TARGET_PROVIDES_LIBLIGHT),true)
+ LOCAL_PATH:= $(call my-dir)
+ # HAL module implemenation stored in
+ # hw/<COPYPIX_HARDWARE_MODULE_ID>.<ro.board.platform>.so
+@@ -25,3 +26,4 @@ LOCAL_MODULE := lights.$(TARGET_BOARD_PLATFORM)
+ LOCAL_MODULE_TAGS := optional
+ 
+ include $(BUILD_SHARED_LIBRARY)
++endif
+-- 
+2.1.4
+

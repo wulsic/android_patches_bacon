@@ -1,0 +1,42 @@
+From c5392520c3ec539c3ab65a093d23b985dbf5e756 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Fri, 26 Aug 2016 16:43:32 +0800
+Subject: [PATCH 2/2] Include kernel headers
+
+Change-Id: If89a64a533ccda291dc5132b5bb3b208b1550f67
+---
+ hal/Android.mk       | 3 ++-
+ post_proc/Android.mk | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/hal/Android.mk b/hal/Android.mk
+index 28c1786..22f85b0 100644
+--- a/hal/Android.mk
++++ b/hal/Android.mk
+@@ -73,7 +73,8 @@ LOCAL_C_INCLUDES += \
+ 	$(LOCAL_PATH)/$(AUDIO_PLATFORM) \
+ 	$(LOCAL_PATH)/audio_extn \
+ 	$(LOCAL_PATH)/voice_extn \
+-	external/expat/lib
++	external/expat/lib \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ 
+ ifeq ($(strip $(AUDIO_FEATURE_ENABLED_MULTI_VOICE_SESSIONS)),true)
+     LOCAL_CFLAGS += -DMULTI_VOICE_SESSION_ENABLED
+diff --git a/post_proc/Android.mk b/post_proc/Android.mk
+index 1a8550c..1c32850 100644
+--- a/post_proc/Android.mk
++++ b/post_proc/Android.mk
+@@ -26,7 +26,8 @@ LOCAL_MODULE:= libqcompostprocbundle
+ 
+ LOCAL_C_INCLUDES := \
+ 	external/tinyalsa/include \
+-	$(call include-path-for, audio-effects)
++	$(call include-path-for, audio-effects) \
++	$(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ 
+ include $(BUILD_SHARED_LIBRARY)
+ endif
+-- 
+2.1.4
+

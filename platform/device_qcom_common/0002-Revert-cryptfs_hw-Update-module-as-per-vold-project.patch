@@ -1,0 +1,56 @@
+From 3338731671fc79de927c14d63c0313d2abc820b7 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Thu, 25 Aug 2016 18:47:38 +0800
+Subject: [PATCH 2/4] Revert "cryptfs_hw: Update module as per vold project"
+
+This reverts commit d304fc4d4dca30c9dae7fa3b4ef504b4e5111935.
+---
+ cryptfs_hw/cryptfs_hw.c | 10 ++++++----
+ cryptfs_hw/cryptfs_hw.h |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/cryptfs_hw/cryptfs_hw.c b/cryptfs_hw/cryptfs_hw.c
+index befc9e1..6102c91 100755
+--- a/cryptfs_hw/cryptfs_hw.c
++++ b/cryptfs_hw/cryptfs_hw.c
+@@ -28,7 +28,6 @@
+ 
+ #include <cryptfs_hw.h>
+ #include <stdlib.h>
+-#include <string.h>
+ #include <sys/limits.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -204,10 +203,13 @@ unsigned int is_hw_disk_encryption(const char* encryption_mode)
+     return ret;
+ }
+ 
+-int clear_hw_device_encryption_key(void)
++unsigned int wipe_hw_device_encryption_key(const char* enc_mode)
+ {
+-    if (load_qseecom_library())
+-        return qseecom_wipe_key(map_usage(QSEECOM_DISK_ENCRYPTION));
++    if (!enc_mode)
++        return -1;
++
++    if (is_hw_disk_encryption(enc_mode) && load_qseecom_library())
++        return qseecom_wipe_key(QSEECOM_DISK_ENCRYPTION);
+ 
+     return 0;
+ }
+diff --git a/cryptfs_hw/cryptfs_hw.h b/cryptfs_hw/cryptfs_hw.h
+index 7596a43..026f1ea 100755
+--- a/cryptfs_hw/cryptfs_hw.h
++++ b/cryptfs_hw/cryptfs_hw.h
+@@ -36,7 +36,7 @@ extern "C" {
+ unsigned int wipe_hw_device_encryption_key(const char*);
+ int set_hw_device_encryption_key(const char*, const char*);
+ int update_hw_device_encryption_key(const char*, const char*, const char*);
+-int clear_hw_device_encryption_key(void);
++int wipe_hw_device_encryption_key(const char*);
+ unsigned int is_hw_disk_encryption(const char*);
+ unsigned int is_hw_fde_enabled(void);
+ int is_ice_enabled(void);
+-- 
+2.1.4
+

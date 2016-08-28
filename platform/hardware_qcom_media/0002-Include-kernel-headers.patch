@@ -1,0 +1,53 @@
+From 876392fab04c8e000338f975833e00f8457f356a Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Fri, 26 Aug 2016 16:40:48 +0800
+Subject: [PATCH 2/3] Include kernel headers
+
+Change-Id: Ie3a5796e1f52b3dacc39556e55a82b7a503d5eb3
+---
+ msm8974/libc2dcolorconvert/Android.mk | 3 ++-
+ msm8974/mm-video-v4l2/vidc/vdec.mk    | 1 +
+ msm8974/mm-video-v4l2/vidc/venc.mk    | 1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/msm8974/libc2dcolorconvert/Android.mk b/msm8974/libc2dcolorconvert/Android.mk
+index 4edb0a5..9b2c24a 100644
+--- a/msm8974/libc2dcolorconvert/Android.mk
++++ b/msm8974/libc2dcolorconvert/Android.mk
+@@ -6,7 +6,8 @@ LOCAL_SRC_FILES := \
+         C2DColorConverter.cpp
+ 
+ LOCAL_C_INCLUDES := \
+-    $(TARGET_OUT_HEADERS)/qcom/display
++    $(TARGET_OUT_HEADERS)/qcom/display \
++    $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ 
+ LOCAL_SHARED_LIBRARIES := liblog libdl
+ 
+diff --git a/msm8974/mm-video-v4l2/vidc/vdec.mk b/msm8974/mm-video-v4l2/vidc/vdec.mk
+index f6f2f24..7178322 100644
+--- a/msm8974/mm-video-v4l2/vidc/vdec.mk
++++ b/msm8974/mm-video-v4l2/vidc/vdec.mk
+@@ -107,6 +107,7 @@ libmm-vdec-inc          += frameworks/native/include/media/hardware
+ libmm-vdec-inc          += $(vdec-inc)
+ libmm-vdec-inc      += hardware/qcom/media/msm8974/libc2dcolorconvert
+ libmm-vdec-inc      += frameworks/av/include/media/stagefright
++libmm-vdec-inc      += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ 
+ 
+ LOCAL_MODULE                    := libOmxVdec
+diff --git a/msm8974/mm-video-v4l2/vidc/venc.mk b/msm8974/mm-video-v4l2/vidc/venc.mk
+index f019bc2..5812563 100644
+--- a/msm8974/mm-video-v4l2/vidc/venc.mk
++++ b/msm8974/mm-video-v4l2/vidc/venc.mk
+@@ -86,6 +86,7 @@ libmm-venc-inc      += frameworks/native/include/media/openmax
+ libmm-venc-inc      += hardware/qcom/media/msm8974/libc2dcolorconvert
+ libmm-venc-inc      += frameworks/av/include/media/stagefright
+ libmm-venc-inc      += frameworks/av/include/media/hardware
++libmm-venc-inc      += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
+ libmm-venc-inc      += $(venc-inc)
+ 
+ LOCAL_MODULE                    := libOmxVenc
+-- 
+2.1.4
+

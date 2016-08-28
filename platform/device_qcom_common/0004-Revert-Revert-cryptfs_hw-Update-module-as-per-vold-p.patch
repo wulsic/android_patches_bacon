@@ -1,0 +1,62 @@
+From e1372318f1c86f5cb7d8424e0b6d000817419276 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Sat, 27 Aug 2016 11:18:15 +0800
+Subject: [PATCH 4/4] Revert "Revert "cryptfs_hw: Update module as per vold
+ project""
+
+This reverts commit 3338731671fc79de927c14d63c0313d2abc820b7.
+
+Conflicts:
+	cryptfs_hw/cryptfs_hw.h
+
+Change-Id: I775f108aed8e7a031b3a9ceca05ec36aae592ce2
+---
+ cryptfs_hw/cryptfs_hw.c | 10 ++++------
+ cryptfs_hw/cryptfs_hw.h |  2 +-
+ 2 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/cryptfs_hw/cryptfs_hw.c b/cryptfs_hw/cryptfs_hw.c
+index ddab653..4ecd8b2 100755
+--- a/cryptfs_hw/cryptfs_hw.c
++++ b/cryptfs_hw/cryptfs_hw.c
+@@ -28,6 +28,7 @@
+ 
+ #include <cryptfs_hw.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <sys/limits.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -205,13 +206,10 @@ unsigned int is_hw_disk_encryption(const char* encryption_mode)
+     return ret;
+ }
+ 
+-unsigned int wipe_hw_device_encryption_key(const char* enc_mode)
++int clear_hw_device_encryption_key(void)
+ {
+-    if (!enc_mode)
+-        return -1;
+-
+-    if (is_hw_disk_encryption(enc_mode) && load_qseecom_library())
+-        return qseecom_wipe_key(QSEECOM_DISK_ENCRYPTION);
++    if (load_qseecom_library())
++        return qseecom_wipe_key(map_usage(QSEECOM_DISK_ENCRYPTION));
+ 
+     return 0;
+ }
+diff --git a/cryptfs_hw/cryptfs_hw.h b/cryptfs_hw/cryptfs_hw.h
+index 7a2ab04..e9335cb 100755
+--- a/cryptfs_hw/cryptfs_hw.h
++++ b/cryptfs_hw/cryptfs_hw.h
+@@ -33,7 +33,7 @@
+ extern "C" {
+ #endif
+ 
+-unsigned int wipe_hw_device_encryption_key(const char*);
++int clear_hw_device_encryption_key(void);
+ unsigned int is_hw_disk_encryption(const char*);
+ unsigned int is_hw_fde_enabled(void);
+ int set_hw_device_encryption_key(const char*, const char*);
+-- 
+2.1.4
+

@@ -1,0 +1,5167 @@
+From e95cdfbaa400cd50066e2abc5b9832d7ccc154d9 Mon Sep 17 00:00:00 2001
+From: Hamster Tian <haotia@gmail.com>
+Date: Sat, 27 Aug 2016 11:19:19 +0800
+Subject: [PATCH 1/2] Remove power HAL in device/qcom/common
+
+This one is not appropriate for AOSP...
+
+Change-Id: Ia533dbff7579d1141e02998fa2d7af6659ce68f2
+---
+ power/Android.mk              |  99 ---------
+ power/hint-data.c             |  47 ----
+ power/hint-data.h             |  46 ----
+ power/list.c                  | 145 -------------
+ power/list.h                  |  41 ----
+ power/metadata-defs.h         |  69 ------
+ power/metadata-parser.c       | 196 -----------------
+ power/performance.h           | 316 ---------------------------
+ power/power-8084.c            | 170 ---------------
+ power/power-8226.c            | 119 ----------
+ power/power-8610.c            | 117 ----------
+ power/power-8909.c            | 107 ---------
+ power/power-8916.c            | 448 --------------------------------------
+ power/power-8937.c            | 320 ---------------------------
+ power/power-8952.c            | 294 -------------------------
+ power/power-8960.c            | 146 -------------
+ power/power-8974.c            | 231 --------------------
+ power/power-8992.c            | 276 ------------------------
+ power/power-8994.c            | 286 ------------------------
+ power/power-8996.c            | 411 -----------------------------------
+ power/power-common.h          |  60 ------
+ power/power-feature-default.c |  24 ---
+ power/power-feature.h         |  24 ---
+ power/power.c                 | 492 ------------------------------------------
+ power/utils.c                 | 414 -----------------------------------
+ power/utils.h                 |  47 ----
+ 26 files changed, 4945 deletions(-)
+ delete mode 100644 power/Android.mk
+ delete mode 100644 power/hint-data.c
+ delete mode 100644 power/hint-data.h
+ delete mode 100644 power/list.c
+ delete mode 100644 power/list.h
+ delete mode 100644 power/metadata-defs.h
+ delete mode 100644 power/metadata-parser.c
+ delete mode 100755 power/performance.h
+ delete mode 100644 power/power-8084.c
+ delete mode 100644 power/power-8226.c
+ delete mode 100644 power/power-8610.c
+ delete mode 100644 power/power-8909.c
+ delete mode 100644 power/power-8916.c
+ delete mode 100644 power/power-8937.c
+ delete mode 100644 power/power-8952.c
+ delete mode 100644 power/power-8960.c
+ delete mode 100644 power/power-8974.c
+ delete mode 100644 power/power-8992.c
+ delete mode 100644 power/power-8994.c
+ delete mode 100644 power/power-8996.c
+ delete mode 100644 power/power-common.h
+ delete mode 100644 power/power-feature-default.c
+ delete mode 100644 power/power-feature.h
+ delete mode 100644 power/power.c
+ delete mode 100644 power/utils.c
+ delete mode 100644 power/utils.h
+
+diff --git a/power/Android.mk b/power/Android.mk
+deleted file mode 100644
+index e8a7827..0000000
+--- a/power/Android.mk
++++ /dev/null
+@@ -1,99 +0,0 @@
+-LOCAL_PATH := $(call my-dir)
+-
+-# Hey Mr. Make Author, DIAF PLX
+-ifeq ($(TARGET_POWERHAL_VARIANT),qcom)
+-USE_ME := true
+-endif
+-
+-ifneq (,$(filter true,$(USE_ME) $(WITH_QC_PERF)))
+-
+-# HAL module implemenation stored in
+-# hw/<POWERS_HARDWARE_MODULE_ID>.<ro.hardware>.so
+-include $(CLEAR_VARS)
+-
+-LOCAL_MODULE_RELATIVE_PATH := hw
+-LOCAL_PROPRIETARY_MODULE := true
+-LOCAL_SHARED_LIBRARIES := liblog libcutils libdl
+-LOCAL_SRC_FILES := power.c metadata-parser.c utils.c list.c hint-data.c
+-
+-ifneq ($(BOARD_POWER_CUSTOM_BOARD_LIB),)
+-  LOCAL_WHOLE_STATIC_LIBRARIES += $(BOARD_POWER_CUSTOM_BOARD_LIB)
+-else
+-
+-# Include target-specific files.
+-ifeq ($(call is-board-platform-in-list, msm8974), true)
+-LOCAL_SRC_FILES += power-8974.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8960), true)
+-LOCAL_SRC_FILES += power-8960.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8226), true)
+-LOCAL_SRC_FILES += power-8226.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8610), true)
+-LOCAL_SRC_FILES += power-8610.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8909), true)
+-LOCAL_SRC_FILES += power-8909.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8916), true)
+-LOCAL_SRC_FILES += power-8916.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8952), true)
+-LOCAL_SRC_FILES += power-8952.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list,msm8937), true)
+-LOCAL_SRC_FILES += power-8937.c
+-LOCAL_CFLAGS += -DMPCTLV3
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, apq8084), true)
+-LOCAL_SRC_FILES += power-8084.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8992), true)
+-LOCAL_SRC_FILES += power-8992.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8994), true)
+-LOCAL_SRC_FILES += power-8994.c
+-endif
+-
+-ifeq ($(call is-board-platform-in-list, msm8996), true)
+-LOCAL_SRC_FILES += power-8996.c
+-LOCAL_CFLAGS += -DMPCTLV3
+-endif
+-
+-endif  #  End of board specific list
+-
+-ifneq ($(TARGET_POWERHAL_SET_INTERACTIVE_EXT),)
+-LOCAL_CFLAGS += -DSET_INTERACTIVE_EXT
+-LOCAL_SRC_FILES += ../../../../$(TARGET_POWERHAL_SET_INTERACTIVE_EXT)
+-endif
+-
+-ifneq ($(TARGET_TAP_TO_WAKE_NODE),)
+-  LOCAL_CFLAGS += -DTAP_TO_WAKE_NODE=\"$(TARGET_TAP_TO_WAKE_NODE)\"
+-endif
+-
+-ifeq ($(TARGET_POWER_SET_FEATURE_LIB),)
+-  LOCAL_SRC_FILES += power-feature-default.c
+-else
+-  LOCAL_STATIC_LIBRARIES += $(TARGET_POWER_SET_FEATURE_LIB)
+-endif
+-
+-ifneq ($(CM_POWERHAL_EXTENSION),)
+-LOCAL_MODULE := power.$(CM_POWERHAL_EXTENSION)
+-else
+-LOCAL_MODULE := power.$(TARGET_BOARD_PLATFORM)
+-endif
+-LOCAL_MODULE_TAGS := optional
+-include $(BUILD_SHARED_LIBRARY)
+-
+-endif # TARGET_POWERHAL_VARIANT == qcom || WITH_QC_PERF
+diff --git a/power/hint-data.c b/power/hint-data.c
+deleted file mode 100644
+index 05e4f88..0000000
+--- a/power/hint-data.c
++++ /dev/null
+@@ -1,47 +0,0 @@
+-/*
+- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#include "hint-data.h"
+-
+-int hint_compare(struct hint_data *first_hint,
+-        struct hint_data *other_hint) {
+-    if (first_hint == other_hint) {
+-        return 0;
+-    } else if ((first_hint && other_hint) &&
+-            (first_hint->hint_id == other_hint->hint_id)) {
+-        return 0;
+-    } else {
+-        return 1;
+-    }
+-}
+-
+-void hint_dump(__attribute__((unused)) struct hint_data *hint)
+-{
+-    /*ALOGI("hint_id: %lu", hint->hint_id);*/
+-}
+diff --git a/power/hint-data.h b/power/hint-data.h
+deleted file mode 100644
+index d58915d..0000000
+--- a/power/hint-data.h
++++ /dev/null
+@@ -1,46 +0,0 @@
+-/*
+- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-/* Default use-case hint IDs */
+-#define DEFAULT_VIDEO_ENCODE_HINT_ID    (0x0A00)
+-#define DEFAULT_VIDEO_DECODE_HINT_ID    (0x0B00)
+-#define DISPLAY_STATE_HINT_ID           (0x0C00)
+-#define DISPLAY_STATE_HINT_ID_2         (0x0D00)
+-#define DEFAULT_AUDIO_HINT_ID           (0x0E00)
+-#define DEFAULT_PROFILE_HINT_ID         (0x0F00)
+-#define CAM_PREVIEW_HINT_ID             (0x1000)
+-
+-struct hint_data {
+-    unsigned long hint_id; /* This is our key. */
+-    unsigned long perflock_handle;
+-};
+-
+-int hint_compare(struct hint_data *first_hint,
+-        struct hint_data *other_hint);
+-void hint_dump(struct hint_data *hint);
+diff --git a/power/list.c b/power/list.c
+deleted file mode 100644
+index 0fe8de2..0000000
+--- a/power/list.c
++++ /dev/null
+@@ -1,145 +0,0 @@
+-/*
+- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-
+-#include "list.h"
+-#include <utils/Log.h>
+-
+-int init_list_head(struct list_node *head)
+-{
+-    if (head == NULL)
+-        return -1;
+-
+-    memset(head, 0, sizeof(*head));
+-
+-    return 0;
+-}
+-
+-struct list_node *add_list_node(struct list_node *head, void *data)
+-{
+-    /* Create a new list_node. And put 'data' into it. */
+-    struct list_node *new_node;
+-
+-    if (head == NULL) {
+-        return NULL;
+-    }
+-
+-    if (!(new_node = malloc(sizeof(struct list_node)))) {
+-        return NULL;
+-    }
+-
+-    new_node->data = data;
+-    new_node->next = head->next;
+-    new_node->compare = head->compare;
+-    new_node->dump = head->dump;
+-    head->next = new_node;
+-
+-    return new_node;
+-}
+-
+-int is_list_empty(struct list_node *head)
+-{
+-    return (head == NULL || head->next == NULL);
+-}
+-
+-/*
+- * Delink and de-allocate 'node'.
+- */
+-int remove_list_node(struct list_node *head, struct list_node *del_node)
+-{
+-    struct list_node *current_node;
+-    struct list_node *saved_node;
+-
+-    if (head == NULL || head->next == NULL) {
+-        return -1;
+-    }
+-
+-    current_node = head->next;
+-    saved_node = head;
+-
+-    while (current_node && current_node != del_node) {
+-        saved_node = current_node;
+-        current_node = current_node->next;
+-    }
+-
+-    if (saved_node) {
+-        if (current_node) {
+-            saved_node->next = current_node->next;
+-        } else {
+-            /* Node not found. */
+-            return -1;
+-        }
+-    }
+-
+-    if (del_node) {
+-        free(del_node);
+-    }
+-
+-    return 0;
+-}
+-
+-void dump_list(struct list_node *head)
+-{
+-    struct list_node *current_node = head;
+-
+-    if (head == NULL)
+-        return;
+-
+-    printf("List:\n");
+-
+-    while ((current_node = current_node->next)) {
+-        if (current_node->dump) {
+-            current_node->dump(current_node->data);
+-        }
+-    }
+-}
+-
+-struct list_node *find_node(struct list_node *head, void *comparison_data)
+-{
+-    struct list_node *current_node = head;
+-
+-    if (head == NULL)
+-        return NULL;
+-
+-    while ((current_node = current_node->next)) {
+-        if (current_node->compare) {
+-            if (current_node->compare(current_node->data,
+-                    comparison_data) == 0) {
+-                /* Match found. Return current_node. */
+-                return current_node;
+-            }
+-        }
+-    }
+-
+-    /* No match found. */
+-    return NULL;
+-}
+diff --git a/power/list.h b/power/list.h
+deleted file mode 100644
+index d68c3df..0000000
+--- a/power/list.h
++++ /dev/null
+@@ -1,41 +0,0 @@
+-/*
+- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-struct list_node {
+-    struct list_node *next;
+-    void *data;
+-    int (*compare)(void *data1, void *data2);
+-    void (*dump)(void *data);
+-};
+-
+-int init_list_head(struct list_node *head);
+-struct list_node * add_list_node(struct list_node *head, void *data);
+-int remove_list_node(struct list_node *head, struct list_node *del_node);
+-void dump_list(struct list_node *head);
+-struct list_node *find_node(struct list_node *head, void *comparison_data);
+diff --git a/power/metadata-defs.h b/power/metadata-defs.h
+deleted file mode 100644
+index 03e2c9c..0000000
+--- a/power/metadata-defs.h
++++ /dev/null
+@@ -1,69 +0,0 @@
+-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- *     * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *
+- */
+-
+-#define ATTRIBUTE_VALUE_DELIM ('=')
+-#define ATTRIBUTE_STRING_DELIM (";")
+-
+-#define METADATA_PARSING_ERR (-1)
+-#define METADATA_PARSING_CONTINUE (0)
+-#define METADATA_PARSING_DONE (1)
+-
+-#define MIN(x,y) (((x)>(y))?(y):(x))
+-
+-struct video_encode_metadata_t {
+-    int hint_id;
+-    int state;
+-};
+-
+-struct video_decode_metadata_t {
+-    int hint_id;
+-    int state;
+-};
+-
+-struct audio_metadata_t {
+-    int hint_id;
+-    int state;
+-};
+-
+-struct cam_preview_metadata_t {
+-    int hint_id;
+-    int state;
+-};
+-
+-int parse_metadata(char *metadata, char **metadata_saveptr,
+-    char *attribute, int attribute_size, char *value,
+-    unsigned int value_size);
+-int parse_video_encode_metadata(char *metadata,
+-    struct video_encode_metadata_t *video_encode_metadata);
+-int parse_video_decode_metadata(char *metadata,
+-    struct video_decode_metadata_t *video_decode_metadata);
+-int parse_audio_metadata(char *metadata,
+-    struct audio_metadata_t *audio_metadata);
+-int parse_cam_preview_metadata(char *metadata,
+-    struct cam_preview_metadata_t *video_decode_metadata);
+diff --git a/power/metadata-parser.c b/power/metadata-parser.c
+deleted file mode 100644
+index 7a0fb73..0000000
+--- a/power/metadata-parser.c
++++ /dev/null
+@@ -1,196 +0,0 @@
+-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- *     * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *
+- */
+-
+-#include <stdio.h>
+-#include <string.h>
+-#include <stdlib.h>
+-
+-#include "metadata-defs.h"
+-
+-int parse_metadata(char *metadata, char **metadata_saveptr,
+-        char *attribute, int attribute_size, char *value,
+-        unsigned int value_size)
+-{
+-    char *attribute_string;
+-    char *attribute_value_delim;
+-    unsigned int bytes_to_copy;
+-
+-    attribute_string = strtok_r(metadata, ATTRIBUTE_STRING_DELIM,
+-            metadata_saveptr);
+-
+-    if (attribute_string == NULL)
+-        return METADATA_PARSING_DONE;
+-
+-    attribute[0] = value[0] = '\0';
+-
+-    if ((attribute_value_delim = strchr(attribute_string,
+-                    ATTRIBUTE_VALUE_DELIM)) != NULL) {
+-        bytes_to_copy = MIN((attribute_value_delim - attribute_string),
+-                attribute_size - 1);
+-        strncpy(attribute, attribute_string,
+-                bytes_to_copy);
+-        attribute[bytes_to_copy] = '\0';
+-
+-        bytes_to_copy = MIN(strlen(attribute_string) - strlen(attribute) - 1,
+-                value_size - 1);
+-        strncpy(value, attribute_value_delim + 1,
+-                bytes_to_copy);
+-        value[bytes_to_copy] = '\0';
+-    }
+-
+-    return METADATA_PARSING_CONTINUE;
+-}
+-
+-int parse_cam_preview_metadata(char *metadata,
+-    struct cam_preview_metadata_t *cam_preview_metadata)
+-{
+-    char attribute[1024], value[1024], *saveptr;
+-    char *temp_metadata = metadata;
+-    int parsing_status;
+-
+-    while ((parsing_status = parse_metadata(temp_metadata, &saveptr,
+-            attribute, sizeof(attribute), value, sizeof(value))) == METADATA_PARSING_CONTINUE) {
+-        if (strlen(attribute) == strlen("hint_id") &&
+-            (strncmp(attribute, "hint_id", strlen("hint_id")) == 0)) {
+-            if (strlen(value) > 0) {
+-                cam_preview_metadata->hint_id = atoi(value);
+-            }
+-        }
+-
+-        if (strlen(attribute) == strlen("state") &&
+-            (strncmp(attribute, "state", strlen("state")) == 0)) {
+-            if (strlen(value) > 0) {
+-                cam_preview_metadata->state = atoi(value);
+-            }
+-        }
+-
+-        temp_metadata = NULL;
+-    }
+-
+-    if (parsing_status == METADATA_PARSING_ERR)
+-        return -1;
+-
+-    return 0;
+-}
+-
+-int parse_video_encode_metadata(char *metadata,
+-    struct video_encode_metadata_t *video_encode_metadata)
+-{
+-    char attribute[1024], value[1024], *saveptr;
+-    char *temp_metadata = metadata;
+-    int parsing_status;
+-
+-    while ((parsing_status = parse_metadata(temp_metadata, &saveptr,
+-            attribute, sizeof(attribute), value, sizeof(value))) == METADATA_PARSING_CONTINUE) {
+-        if (strlen(attribute) == strlen("hint_id") &&
+-            (strncmp(attribute, "hint_id", strlen("hint_id")) == 0)) {
+-            if (strlen(value) > 0) {
+-                video_encode_metadata->hint_id = atoi(value);
+-            }
+-        }
+-
+-        if (strlen(attribute) == strlen("state") &&
+-            (strncmp(attribute, "state", strlen("state")) == 0)) {
+-            if (strlen(value) > 0) {
+-                video_encode_metadata->state = atoi(value);
+-            }
+-        }
+-
+-        temp_metadata = NULL;
+-    }
+-
+-    if (parsing_status == METADATA_PARSING_ERR)
+-        return -1;
+-
+-    return 0;
+-}
+-
+-int parse_video_decode_metadata(char *metadata,
+-    struct video_decode_metadata_t *video_decode_metadata)
+-{
+-    char attribute[1024], value[1024], *saveptr;
+-    char *temp_metadata = metadata;
+-    int parsing_status;
+-
+-    while ((parsing_status = parse_metadata(temp_metadata, &saveptr,
+-            attribute, sizeof(attribute), value, sizeof(value))) == METADATA_PARSING_CONTINUE) {
+-        if (strlen(attribute) == strlen("hint_id") &&
+-            (strncmp(attribute, "hint_id", strlen("hint_id")) == 0)) {
+-            if (strlen(value) > 0) {
+-                video_decode_metadata->hint_id = atoi(value);
+-            }
+-        }
+-
+-        if (strlen(attribute) == strlen("state") &&
+-            (strncmp(attribute, "state", strlen("state")) == 0)) {
+-            if (strlen(value) > 0) {
+-                video_decode_metadata->state = atoi(value);
+-            }
+-        }
+-
+-        temp_metadata = NULL;
+-    }
+-
+-    if (parsing_status == METADATA_PARSING_ERR)
+-        return -1;
+-
+-    return 0;
+-}
+-
+-int parse_audio_metadata(char *metadata,
+-    struct audio_metadata_t *audio_metadata)
+-{
+-    char attribute[1024], value[1024], *saveptr;
+-    char *temp_metadata = metadata;
+-    int parsing_status;
+-
+-    while ((parsing_status = parse_metadata(temp_metadata, &saveptr,
+-            attribute, sizeof(attribute), value, sizeof(value))) == METADATA_PARSING_CONTINUE) {
+-        if (strlen(attribute) == strlen("hint_id") &&
+-            (strncmp(attribute, "hint_id", strlen("hint_id")) == 0)) {
+-            if (strlen(value) > 0) {
+-                audio_metadata->hint_id = atoi(value);
+-            }
+-        }
+-
+-        if (strlen(attribute) == strlen("state") &&
+-            (strncmp(attribute, "state", strlen("state")) == 0)) {
+-            if (strlen(value) > 0) {
+-                audio_metadata->state = atoi(value);
+-            }
+-        }
+-
+-        temp_metadata = NULL;
+-    }
+-
+-    if (parsing_status == METADATA_PARSING_ERR)
+-        return -1;
+-
+-    return 0;
+-}
+diff --git a/power/performance.h b/power/performance.h
+deleted file mode 100755
+index 4a91f0b..0000000
+--- a/power/performance.h
++++ /dev/null
+@@ -1,316 +0,0 @@
+-/* Copyright (c) 2012, 2014, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- *     * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *
+- */
+-
+-#ifdef __cplusplus
+-extern "C" {
+-#endif
+-
+-#define FAILED                  -1
+-#define SUCCESS                 0
+-#define INDEFINITE_DURATION     0
+-
+-enum SCREEN_DISPLAY_TYPE {
+-    DISPLAY_OFF = 0x00FF,
+-};
+-
+-enum PWR_CLSP_TYPE {
+-#ifdef MPCTLV3
+-    ALL_CPUS_PWR_CLPS_DIS_V3 = 0x40400000, /* v3 resource */
+-#endif
+-    ALL_CPUS_PWR_CLPS_DIS = 0x101,
+-};
+-
+-/* For CPUx min freq, the leftmost byte
+- * represents the CPU and the
+- * rightmost byte represents the frequency
+- * All intermediate frequencies on the
+- * device are supported. The hex value
+- * passed into PerfLock will be multiplied
+- * by 10^5. This frequency or the next
+- * highest frequency available will be set
+- *
+- * For example, if 1.4 Ghz is required on
+- * CPU0, use 0x20E
+- *
+- * If the highest available frequency
+- * on the device is required, use
+- * CPUx_MIN_FREQ_TURBO_MAX
+- * where x represents the CPU
+- */
+-enum CPU0_MIN_FREQ_LVL {
+-    CPU0_MIN_FREQ_NONTURBO_MAX = 0x20A,
+-    CPU0_MIN_FREQ_TURBO_MAX = 0x2FE,
+-};
+-
+-enum CPU1_MIN_FREQ_LVL {
+-    CPU1_MIN_FREQ_NONTURBO_MAX = 0x30A,
+-    CPU1_MIN_FREQ_TURBO_MAX = 0x3FE,
+-};
+-
+-enum CPU2_MIN_FREQ_LVL {
+-    CPU2_MIN_FREQ_NONTURBO_MAX = 0x40A,
+-    CPU2_MIN_FREQ_TURBO_MAX = 0x4FE,
+-};
+-
+-enum CPU3_MIN_FREQ_LVL {
+-    CPU3_MIN_FREQ_NONTURBO_MAX = 0x50A,
+-    CPU3_MIN_FREQ_TURBO_MAX = 0x5FE,
+-};
+-
+-enum CPU0_MAX_FREQ_LVL {
+-    CPU0_MAX_FREQ_NONTURBO_MAX = 0x150A,
+-};
+-
+-enum CPU1_MAX_FREQ_LVL {
+-    CPU1_MAX_FREQ_NONTURBO_MAX = 0x160A,
+-};
+-
+-enum CPU2_MAX_FREQ_LVL {
+-    CPU2_MAX_FREQ_NONTURBO_MAX = 0x170A,
+-};
+-
+-enum CPU3_MAX_FREQ_LVL {
+-    CPU3_MAX_FREQ_NONTURBO_MAX = 0x180A,
+-};
+-
+-enum MIN_CPUS_ONLINE_LVL {
+-#ifdef MPCTLV3
+-    CPUS_ONLINE_MIN_BIG = 0x41000000, /* v3 resource */
+-    CPUS_ONLINE_MIN_LITTLE = 0x41000100, /* v3 resource */
+-#endif
+-    CPUS_ONLINE_MIN_2 = 0x702,
+-    CPUS_ONLINE_MIN_3 = 0x703,
+-    CPUS_ONLINE_MIN_4 = 0x704,
+-    CPUS_ONLINE_MPD_OVERRIDE = 0x777,
+-    CPUS_ONLINE_MAX = 0x7FF,
+-};
+-
+-enum MAX_CPUS_ONLINE_LVL {
+-#ifdef MPCTLV3
+-    CPUS_ONLINE_MAX_LIMIT_BIG = 0x41004000, /* v3 resource */
+-    CPUS_ONLINE_MAX_LIMIT_LITTLE = 0x41004100, /* v3 resource */
+-#endif
+-    CPUS_ONLINE_MAX_LIMIT_1 = 0x8FE,
+-    CPUS_ONLINE_MAX_LIMIT_2 = 0x8FD,
+-    CPUS_ONLINE_MAX_LIMIT_3 = 0x8FC,
+-    CPUS_ONLINE_MAX_LIMIT_4 = 0x8FB,
+-    CPUS_ONLINE_MAX_LIMIT_MAX = 0x8FB,
+-};
+-
+-enum SAMPLING_RATE_LVL {
+-    MS_500 = 0xBCD,
+-    MS_50 = 0xBFA,
+-    MS_20 = 0xBFD,
+-};
+-
+-enum ONDEMAND_IO_BUSY_LVL {
+-    IO_BUSY_OFF = 0xC00,
+-    IO_BUSY_ON = 0xC01,
+-};
+-
+-enum ONDEMAND_SAMPLING_DOWN_FACTOR_LVL {
+-    SAMPLING_DOWN_FACTOR_1 = 0xD01,
+-    SAMPLING_DOWN_FACTOR_4 = 0xD04,
+-};
+-
+-
+-enum INTERACTIVE_TIMER_RATE_LVL {
+-    TR_MS_500 = 0xECD,
+-    TR_MS_100 = 0xEF5,
+-    TR_MS_50 = 0xEFA,
+-    TR_MS_30 = 0xEFC,
+-    TR_MS_20 = 0xEFD,
+-};
+-
+-/* This timer rate applicable to cpu0
+-    across 8939 series chipset */
+-enum INTERACTIVE_TIMER_RATE_LVL_CPU0_8939 {
+-    TR_MS_CPU0_500 = 0x30CD,
+-    TR_MS_CPU0_100 = 0x30F5,
+-    TR_MS_CPU0_50 = 0x30FA,
+-    TR_MS_CPU0_30 = 0x30FC,
+-    TR_MS_CPU0_20 = 0x30FD,
+-};
+-
+-/* This timer rate applicable to cpu4
+-    across 8939 series chipset */
+-enum INTERACTIVE_TIMER_RATE_LVL_CPU4_8939 {
+-    TR_MS_CPU4_500 = 0x3BCD,
+-    TR_MS_CPU4_100 = 0x3BF5,
+-    TR_MS_CPU4_50 = 0x3BFA,
+-    TR_MS_CPU4_30 = 0x3BFC,
+-    TR_MS_CPU4_20 = 0x3BFD,
+-};
+-
+-enum INTERACTIVE_HISPEED_FREQ_LVL {
+-    HS_FREQ_1026 = 0xF0A,
+-    HS_FREQ_800  = 0xF08,
+-};
+-
+-enum INTERACTIVE_HISPEED_LOAD_LVL {
+-    HISPEED_LOAD_90 = 0x105A,
+-};
+-
+-enum SYNC_FREQ_LVL {
+-    SYNC_FREQ_300 = 0x1103,
+-    SYNC_FREQ_600 = 0X1106,
+-    SYNC_FREQ_384 = 0x1103,
+-    SYNC_FREQ_NONTURBO_MAX = 0x110A,
+-    SYNC_FREQ_TURBO = 0x110F,
+-};
+-
+-enum OPTIMAL_FREQ_LVL {
+-    OPTIMAL_FREQ_300 = 0x1203,
+-    OPTIMAL_FREQ_600 = 0x1206,
+-    OPTIMAL_FREQ_384 = 0x1203,
+-    OPTIMAL_FREQ_NONTURBO_MAX = 0x120A,
+-    OPTIMAL_FREQ_TURBO = 0x120F,
+-};
+-
+-enum SCREEN_PWR_CLPS_LVL {
+-    PWR_CLPS_DIS = 0x1300,
+-    PWR_CLPS_ENA = 0x1301,
+-};
+-
+-enum THREAD_MIGRATION_LVL {
+-    THREAD_MIGRATION_SYNC_OFF = 0x1400,
+-};
+-
+-enum INTERACTIVE_IO_BUSY_LVL {
+-    INTERACTIVE_IO_BUSY_OFF = 0x1B00,
+-    INTERACTIVE_IO_BUSY_ON = 0x1B01,
+-};
+-
+-enum SCHED_BOOST_LVL {
+-#ifdef MPCTLV3
+-    SCHED_BOOST_ON_V3 = 0x40C00000, /* v3 resource */
+-#endif
+-    SCHED_BOOST_ON = 0x1E01,
+-};
+-
+-enum CPU4_MIN_FREQ_LVL {
+-    CPU4_MIN_FREQ_NONTURBO_MAX = 0x1F0A,
+-    CPU4_MIN_FREQ_TURBO_MAX = 0x1FFE,
+-};
+-
+-enum CPU5_MIN_FREQ_LVL {
+-    CPU5_MIN_FREQ_NONTURBO_MAX = 0x200A,
+-    CPU5_MIN_FREQ_TURBO_MAX = 0x20FE,
+-};
+-
+-enum CPU6_MIN_FREQ_LVL {
+-    CPU6_MIN_FREQ_NONTURBO_MAX = 0x210A,
+-    CPU6_MIN_FREQ_TURBO_MAX = 0x21FE,
+-};
+-
+-enum CPU7_MIN_FREQ_LVL {
+-    CPU7_MIN_FREQ_NONTURBO_MAX = 0x220A,
+-    CPU7_MIN_FREQ_TURBO_MAX = 0x22FE,
+-};
+-
+-enum CPU4_MAX_FREQ_LVL {
+-    CPU4_MAX_FREQ_NONTURBO_MAX = 0x230A,
+-};
+-
+-enum CPU5_MAX_FREQ_LVL {
+-    CPU5_MAX_FREQ_NONTURBO_MAX = 0x240A,
+-};
+-
+-enum CPU6_MAX_FREQ_LVL {
+-    CPU6_MAX_FREQ_NONTURBO_MAX = 0x250A,
+-};
+-
+-enum CPU7_MAX_FREQ_LVL {
+-    CPU7_MAX_FREQ_NONTURBO_MAX = 0x260A,
+-};
+-
+-enum SCHED_PREFER_IDLE {
+-    SCHED_PREFER_IDLE_DIS = 0x3E01,
+-};
+-
+-enum SCHED_MIGRATE_COST_CHNG {
+-    SCHED_MIGRATE_COST_SET = 0x3F01,
+-};
+-
+-#ifdef MPCTLV3
+-/**
+- * MPCTL v3 opcodes
+- */
+-enum MAX_FREQ_CLUSTER_BIG {
+-    MAX_FREQ_BIG_CORE_0         = 0x40804000,
+-};
+-
+-enum MAX_FREQ_CLUSTER_LITTLE {
+-    MAX_FREQ_LITTLE_CORE_0      = 0x40804100,
+-};
+-
+-enum MIN_FREQ_CLUSTER_BIG {
+-    MIN_FREQ_BIG_CORE_0         = 0x40800000,
+-};
+-
+-enum MIN_FREQ_CLUSTER_LITTLE {
+-    MIN_FREQ_LITTLE_CORE_0      = 0x40800100,
+-};
+-
+-enum INTERACTIVE_CLUSTER_BIG {
+-    ABOVE_HISPEED_DELAY_BIG     = 0x41400000,
+-    GO_HISPEED_LOAD_BIG         = 0x41410000,
+-    HISPEED_FREQ_BIG            = 0x41414000,
+-    TARGET_LOADS_BIG            = 0x41420000,
+-    IGNORE_HISPEED_NOTIF_BIG    = 0x41438000,
+-};
+-
+-enum INTERACTIVE_CLUSTER_LITTLE {
+-    ABOVE_HISPEED_DELAY_LITTLE  = 0x41400100,
+-    GO_HISPEED_LOAD_LITTLE      = 0x41410100,
+-    HISPEED_FREQ_LITTLE         = 0x41414100,
+-    TARGET_LOADS_LITTLE         = 0x41420100,
+-    IGNORE_HISPEED_NOTIF_LITTLE = 0x41438100,
+-};
+-
+-enum CPUBW_HWMON {
+-    CPUBW_HWMON_MIN_FREQ        = 0x41800000,
+-    CPUBW_HWMON_V1              = 0x4180C000,
+-    LOW_POWER_CEIL_MBPS         = 0x41810000,
+-    LOW_POWER_IO_PERCENT        = 0x41814000,
+-    CPUBW_HWMON_SAMPLE_MS       = 0x41820000,
+-};
+-
+-enum SCHEDULER {
+-    SCHED_GROUP_ON              = 0x40C28000,
+-};
+-
+-enum STORAGE {
+-    STOR_CLK_SCALE_DIS          = 0x42C0C000,
+-};
+-#endif
+-
+-#ifdef __cplusplus
+-}
+-#endif
+diff --git a/power/power-8084.c b/power/power-8084.c
+deleted file mode 100644
+index 4d53455..0000000
+--- a/power/power-8084.c
++++ /dev/null
+@@ -1,170 +0,0 @@
+-/*
+- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int first_display_off_hint;
+-extern int display_boost;
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MIN_4,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { CPUS_ONLINE_MAX_LIMIT_2,
+-            CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-            CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-	if (hint == POWER_HINT_SET_PROFILE) {
+-		set_power_profile(*(int32_t *)data);
+-		return HINT_HANDLED;
+-	}
+-
+-	// Skip other hints in custom power modes
+-	if (current_power_profile != PROFILE_BALANCED) {
+-		return HINT_HANDLED;
+-	}
+-
+-	if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { CPUS_ONLINE_MIN_2, 0x20B, 0x30B, 0x1C00};
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-	}
+-
+-	return HINT_NONE;
+-}
+-
+-int set_interactive_override(struct power_module *module, int on)
+-{
+-    char governor[80];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-        /*
+-         * We need to be able to identify the first display off hint
+-         * and release the current lock holder
+-         */
+-        if (display_boost) {
+-            if (!first_display_off_hint) {
+-                undo_initial_hint_action();
+-                first_display_off_hint = 1;
+-            }
+-            /* used for all subsequent toggles to the display */
+-            undo_hint_action(DISPLAY_STATE_HINT_ID_2);
+-        }
+-
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {MS_500, SYNC_FREQ_600, OPTIMAL_FREQ_600, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-
+-            return HINT_HANDLED;
+-        }
+-    } else {
+-        /* Display on */
+-        if (display_boost) {
+-            int resource_values2[] = {CPUS_ONLINE_MIN_2};
+-            perform_hint_action(DISPLAY_STATE_HINT_ID_2,
+-                    resource_values2, ARRAY_SIZE(resource_values2));
+-        }
+-
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-
+-            return HINT_HANDLED;
+-        }
+-    }
+-
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8226.c b/power/power-8226.c
+deleted file mode 100644
+index 59ef7d4..0000000
+--- a/power/power-8226.c
++++ /dev/null
+@@ -1,119 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2014, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MIN_4,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { CPUS_ONLINE_MAX_LIMIT_2,
+-            CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-            CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { CPUS_ONLINE_MIN_2, 0x20F, 0x30F};
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        return HINT_HANDLED;
+-    } else if (hint == POWER_HINT_INTERACTION) {
+-        int resources[] = {0x702, 0x20B, 0x30B};
+-        int duration = 3000;
+-
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-        return HINT_HANDLED;
+-    }
+-
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8610.c b/power/power-8610.c
+deleted file mode 100644
+index 5c7ccf8..0000000
+--- a/power/power-8610.c
++++ /dev/null
+@@ -1,117 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2014, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MIN_2,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { CPUS_ONLINE_MAX_LIMIT_2,
+-            CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { CPUS_ONLINE_MIN_2, 0x20F, 0x30F};
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        return HINT_HANDLED;
+-    } else if (hint == POWER_HINT_INTERACTION) {
+-        int resources[] = {0x702, 0x20B, 0x30B};
+-        int duration = 3000;
+-
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-        return HINT_HANDLED;
+-    }
+-
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8909.c b/power/power-8909.c
+deleted file mode 100644
+index 6127f02..0000000
+--- a/power/power-8909.c
++++ /dev/null
+@@ -1,107 +0,0 @@
+-/*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QTI PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-
+-static void process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-    char tmp_str[NODE_MAX];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return;
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {HS_FREQ_800, THREAD_MIGRATION_SYNC_OFF};
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-         if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-           undo_hint_action(video_encode_metadata.hint_id);
+-        }
+-    }
+-}
+-
+-int power_hint_override(struct power_module *module, power_hint_t hint, void *data)
+-{
+-    switch(hint) {
+-        case POWER_HINT_VIDEO_ENCODE:
+-        {
+-          process_video_encode_hint(data);
+-          return HINT_HANDLED;
+-        }
+-        default:
+-        {
+-            break;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8916.c b/power/power-8916.c
+deleted file mode 100644
+index 3ce1b84..0000000
+--- a/power/power-8916.c
++++ /dev/null
+@@ -1,448 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2014, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-#define MIN_FREQ_CPU0_DISP_OFF 400000
+-#define MIN_FREQ_CPU0_DISP_ON  960000
+-
+-char scaling_min_freq[4][80] ={
+-    "sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq",
+-    "sys/devices/system/cpu/cpu1/cpufreq/scaling_min_freq",
+-    "sys/devices/system/cpu/cpu2/cpufreq/scaling_min_freq",
+-    "sys/devices/system/cpu/cpu3/cpufreq/scaling_min_freq"
+-};
+-
+-int display_boost;
+-static int slack_node_rw_failed = 0;
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-/**
+- * If target is 8916:
+- *     return 1
+- * else:
+- *     return 0
+- */
+-static int is_target_8916(void)
+-{
+-    static int is_8916 = -1;
+-    int soc_id;
+-
+-    if (is_8916 >= 0)
+-        return is_8916;
+-
+-    soc_id = get_soc_id();
+-    if (soc_id == 206 || (soc_id >= 247 && soc_id <= 250))
+-        is_8916 = 1;
+-    else
+-        is_8916 = 0;
+-
+-    return is_8916;
+-}
+-
+-static int profile_high_performance_8916[3] = {
+-    0x1C00, 0x0901, CPU0_MIN_FREQ_TURBO_MAX,
+-};
+-
+-static int profile_high_performance_8939[11] = {
+-    SCHED_BOOST_ON, 0x1C00, 0x0901,
+-    CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-    CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX,
+-    CPU4_MIN_FREQ_TURBO_MAX, CPU5_MIN_FREQ_TURBO_MAX,
+-    CPU6_MIN_FREQ_TURBO_MAX, CPU7_MIN_FREQ_TURBO_MAX,
+-};
+-
+-static int profile_power_save_8916[1] = {
+-    CPU0_MAX_FREQ_NONTURBO_MAX,
+-};
+-
+-static int profile_power_save_8939[5] = {
+-    CPUS_ONLINE_MAX_LIMIT_2,
+-    CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-    CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX,
+-};
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int *resource_values = is_target_8916() ?
+-            profile_high_performance_8916 : profile_high_performance_8939;
+-
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int* resource_values = is_target_8916() ?
+-            profile_power_save_8916 : profile_power_save_8939;
+-
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-static void process_video_decode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_decode_metadata_t video_decode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return;
+-    }
+-
+-    if (metadata) {
+-        ALOGI("Processing video decode hint. Metadata: %s", (char *)metadata);
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_decode_metadata, 0, sizeof(struct video_decode_metadata_t));
+-    video_decode_metadata.state = -1;
+-    video_decode_metadata.hint_id = DEFAULT_VIDEO_DECODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_decode_metadata((char *)metadata, &video_decode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_decode_metadata.state == 1) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(video_decode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_30, HISPEED_LOAD_90, HS_FREQ_1026};
+-
+-            perform_hint_action(video_decode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        }
+-    } else if (video_decode_metadata.state == 0) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_decode_metadata.hint_id);
+-        }
+-    }
+-}
+-
+-static void process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return;
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {IO_BUSY_OFF, SAMPLING_DOWN_FACTOR_1, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {HS_FREQ_800, 0x1C00};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-        }
+-    }
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-#ifdef __LP64__
+-typedef int64_t hintdata;
+-#else
+-typedef int hintdata;
+-#endif
+-
+-int  set_interactive_override(struct power_module *module __unused, int on)
+-{
+-    char governor[80];
+-    char tmp_str[NODE_MAX];
+-    struct video_encode_metadata_t video_encode_metadata;
+-    int rc;
+-
+-    ALOGI("Got set_interactive hint");
+-    if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU0) == -1) {
+-        if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU1) == -1) {
+-            if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU2) == -1) {
+-                if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU3) == -1) {
+-                    ALOGE("Can't obtain scaling governor.");
+-                    return HINT_HANDLED;
+-                }
+-            }
+-        }
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-        if (is_target_8916()) {
+-            if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-                int resource_values[] = {TR_MS_50, THREAD_MIGRATION_SYNC_OFF};
+-                perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                        resource_values, ARRAY_SIZE(resource_values));
+-            } /* Perf time rate set for 8916 target*/
+-        /* End of display hint for 8916 */
+-        } else {
+-             if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-               int resource_values[] = {TR_MS_CPU0_50,TR_MS_CPU4_50, THREAD_MIGRATION_SYNC_OFF};
+-
+-               /* Set CPU0 MIN FREQ to 400Mhz avoid extra peak power
+-                  impact in volume key press  */
+-               snprintf(tmp_str, NODE_MAX, "%d", MIN_FREQ_CPU0_DISP_OFF);
+-               if (sysfs_write(scaling_min_freq[0], tmp_str) != 0) {
+-                   if (sysfs_write(scaling_min_freq[1], tmp_str) != 0) {
+-                       if (sysfs_write(scaling_min_freq[2], tmp_str) != 0) {
+-                           if (sysfs_write(scaling_min_freq[3], tmp_str) != 0) {
+-                               if(!slack_node_rw_failed) {
+-                                  ALOGE("Failed to write to %s",SCALING_MIN_FREQ );
+-                               }
+-                                rc = 1;
+-                           }
+-                       }
+-                   }
+-                }
+-
+-                perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                        resource_values, ARRAY_SIZE(resource_values));
+-             } /* Perf time rate set for CORE0,CORE4 8939 target*/
+-        /* End of display hint for 8939 */
+-        }
+-
+-    } else {
+-        /* Display on. */
+-      if (is_target_8916()) {
+-          if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-         }
+-      } else {
+-
+-          if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-
+-              /* Recovering MIN_FREQ in display ON case */
+-               snprintf(tmp_str, NODE_MAX, "%d", MIN_FREQ_CPU0_DISP_ON);
+-               if (sysfs_write(scaling_min_freq[0], tmp_str) != 0) {
+-                   if (sysfs_write(scaling_min_freq[1], tmp_str) != 0) {
+-                       if (sysfs_write(scaling_min_freq[2], tmp_str) != 0) {
+-                           if (sysfs_write(scaling_min_freq[3], tmp_str) != 0) {
+-                               if(!slack_node_rw_failed) {
+-                                  ALOGE("Failed to write to %s",SCALING_MIN_FREQ );
+-                               }
+-                                rc = 1;
+-                           }
+-                       }
+-                   }
+-                }
+-             undo_hint_action(DISPLAY_STATE_HINT_ID);
+-          }
+-
+-      } /* End of check condition during the DISPLAY ON case */
+-   }
+-    return HINT_HANDLED;
+-}
+-
+-int power_hint_override(struct power_module *module __unused, power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_INTERACTION) {
+-        int duration = 500, duration_hint = 0;
+-        static unsigned long long previous_boost_time = 0;
+-
+-        if (data) {
+-            duration_hint = *((int *)data);
+-        }
+-
+-        duration = duration_hint > 0 ? duration_hint : 500;
+-
+-        struct timeval cur_boost_timeval = {0, 0};
+-        gettimeofday(&cur_boost_timeval, NULL);
+-        unsigned long long cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-        double elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-        if (elapsed_time > 750000)
+-            elapsed_time = 750000;
+-        // don't hint if it's been less than 250ms since last boost
+-        // also detect if we're doing anything resembling a fling
+-        // support additional boosting in case of flings
+-        else if (elapsed_time < 250000 && duration <= 750)
+-            return HINT_HANDLED;
+-
+-        previous_boost_time = cur_boost_time;
+-
+-        if (duration >= 1500) {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_BOOST_ON,
+-                SCHED_PREFER_IDLE_DIS,
+-                0x20D
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        } else {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_PREFER_IDLE_DIS,
+-                0x20D
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        }
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_LAUNCH_BOOST) {
+-        int duration = 2000;
+-        int resources[] = {
+-            ALL_CPUS_PWR_CLPS_DIS,
+-            SCHED_BOOST_ON,
+-            SCHED_PREFER_IDLE_DIS,
+-            0x20F,
+-            0x1C00,
+-            0x4001,
+-            0x4101,
+-            0x4201
+-        };
+-
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-	}
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = {
+-            ALL_CPUS_PWR_CLPS_DIS,
+-            SCHED_BOOST_ON,
+-            SCHED_PREFER_IDLE_DIS,
+-            0x20D
+-        };
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-	}
+-
+-    if (hint == POWER_HINT_VIDEO_ENCODE) {
+-        process_video_encode_hint(data);
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_VIDEO_DECODE) {
+-        process_video_decode_hint(data);
+-        return HINT_HANDLED;
+-    }
+-
+-	return HINT_NONE;
+-}
+diff --git a/power/power-8937.c b/power/power-8937.c
+deleted file mode 100644
+index 02440a6..0000000
+--- a/power/power-8937.c
++++ /dev/null
+@@ -1,320 +0,0 @@
+-/*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QTI PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int display_hint_sent;
+-static int video_encode_hint_sent;
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void process_video_encode_hint(void *metadata);
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-static int profile_high_performance[] = {
+-    SCHED_BOOST_ON_V3, 0x1,
+-    ALL_CPUS_PWR_CLPS_DIS_V3, 0x1,
+-    CPUS_ONLINE_MIN_BIG, 0x2,
+-    CPUS_ONLINE_MIN_LITTLE, 0x2,
+-    MIN_FREQ_BIG_CORE_0, 0xFFF,
+-    MIN_FREQ_LITTLE_CORE_0, 0xFFF,
+-};
+-
+-static int profile_power_save[] = {
+-    CPUS_ONLINE_MAX_LIMIT_BIG, 0x1,
+-    MAX_FREQ_BIG_CORE_0, 0x3bf,
+-    MAX_FREQ_LITTLE_CORE_0, 0x300,
+-};
+-
+-static int profile_bias_power[] = {
+-    MAX_FREQ_BIG_CORE_0, 0x4B0,
+-    MAX_FREQ_LITTLE_CORE_0, 0x300,
+-};
+-
+-static int profile_bias_performance[] = {
+-    CPUS_ONLINE_MAX_LIMIT_BIG, 0x2,
+-    CPUS_ONLINE_MAX_LIMIT_LITTLE, 0x2,
+-    MIN_FREQ_BIG_CORE_0, 0x540,
+-};
+-
+-int get_number_of_profiles() {
+-    return 5;
+-}
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_high_performance,
+-                ARRAY_SIZE(profile_high_performance));
+-        ALOGD("%s: set performance mode", __func__);
+-
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_power_save,
+-                ARRAY_SIZE(profile_power_save));
+-        ALOGD("%s: set powersave", __func__);
+-    } else if (profile == PROFILE_BIAS_POWER) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_bias_power,
+-                ARRAY_SIZE(profile_bias_power));
+-        ALOGD("%s: Set bias power mode", __func__);
+-
+-    } else if (profile == PROFILE_BIAS_PERFORMANCE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_bias_performance,
+-                ARRAY_SIZE(profile_bias_performance));
+-        ALOGD("%s: Set bias perf mode", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-int  power_hint_override(struct power_module *module, power_hint_t hint,
+-        void *data)
+-{
+-    int duration, duration_hint;
+-    static unsigned long long previous_boost_time = 0;
+-    unsigned long long cur_boost_time;
+-    struct timeval cur_boost_timeval = {0, 0};
+-    double elapsed_time;
+-    int resources_launch_boost[] = {
+-        SCHED_BOOST_ON_V3, 0x1,
+-        MAX_FREQ_BIG_CORE_0, 0xFFF,
+-        MAX_FREQ_LITTLE_CORE_0, 0xFFF,
+-        MIN_FREQ_BIG_CORE_0, 0xFFF,
+-        MIN_FREQ_LITTLE_CORE_0, 0xFFF,
+-        ALL_CPUS_PWR_CLPS_DIS_V3, 0x1,
+-        STOR_CLK_SCALE_DIS, 0x1,
+-    };
+-
+-    int resources_cpu_boost[] = {
+-        SCHED_BOOST_ON_V3, 0x1,
+-        MIN_FREQ_BIG_CORE_0, 0x3BF,
+-    };
+-
+-    int resources_interaction_fling_boost[] = {
+-        MIN_FREQ_BIG_CORE_0, 0x3BF,
+-        MIN_FREQ_LITTLE_CORE_0, 0x300,
+-        SCHED_BOOST_ON_V3, 0x1,
+-    };
+-
+-    int resources_interaction_boost[] = {
+-        MIN_FREQ_BIG_CORE_0, 0x300,
+-    };
+-
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    switch (hint) {
+-        case POWER_HINT_INTERACTION:
+-            duration = 500;
+-            duration_hint = 0;
+-
+-            if (data) {
+-                duration_hint = *((int *)data);
+-            }
+-
+-            duration = duration_hint > 0 ? duration_hint : 500;
+-
+-            gettimeofday(&cur_boost_timeval, NULL);
+-            cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-            elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-            if (elapsed_time > 750000)
+-                elapsed_time = 750000;
+-            // don't hint if it's been less than 250ms since last boost
+-            // also detect if we're doing anything resembling a fling
+-            // support additional boosting in case of flings
+-            else if (elapsed_time < 250000 && duration <= 750)
+-                return HINT_HANDLED;
+-
+-            previous_boost_time = cur_boost_time;
+-
+-            if (duration >= 1500) {
+-                interaction(duration, ARRAY_SIZE(resources_interaction_fling_boost),
+-                        resources_interaction_fling_boost);
+-            } else {
+-                interaction(duration, ARRAY_SIZE(resources_interaction_boost),
+-                        resources_interaction_boost);
+-            }
+-            return HINT_HANDLED;
+-        case POWER_HINT_LAUNCH_BOOST:
+-            duration = 2000;
+-            interaction(duration, ARRAY_SIZE(resources_launch_boost),
+-                    resources_launch_boost);
+-            return HINT_HANDLED;
+-        case POWER_HINT_CPU_BOOST:
+-            duration = *(int32_t *)data / 1000;
+-            if (duration > 0) {
+-                interaction(duration, ARRAY_SIZE(resources_cpu_boost),
+-                        resources_cpu_boost);
+-            }
+-            return HINT_HANDLED;
+-        case POWER_HINT_VIDEO_ENCODE:
+-            process_video_encode_hint(data);
+-            return HINT_HANDLED;
+-    }
+-    return HINT_NONE;
+-}
+-
+-int  set_interactive_override(struct power_module *module, int on)
+-{
+-    char governor[80];
+-
+-    ALOGI("Got set_interactive hint");
+-
+-    if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU0) == -1) {
+-        if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU1) == -1) {
+-            if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU2) == -1) {
+-                if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU3) == -1) {
+-                    ALOGE("Can't obtain scaling governor.");
+-                    return HINT_HANDLED;
+-                }
+-            }
+-        }
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-             if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-               int resource_values[] = {TR_MS_CPU0_50, TR_MS_CPU4_50};
+-
+-               if (!display_hint_sent) {
+-                   perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                   resource_values, ARRAY_SIZE(resource_values));
+-                  display_hint_sent = 1;
+-                }
+-             } /* Perf time rate set for CORE0,CORE4 8952 target*/
+-
+-    } else {
+-        /* Display on. */
+-          if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-
+-             undo_hint_action(DISPLAY_STATE_HINT_ID);
+-             display_hint_sent = 0;
+-          }
+-   }
+-    return HINT_HANDLED;
+-}
+-
+-/* Video Encode Hint */
+-static void process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    ALOGI("Got process_video_encode_hint");
+-
+-    if (get_scaling_governor_check_cores(governor,
+-        sizeof(governor),CPU0) == -1) {
+-            if (get_scaling_governor_check_cores(governor,
+-                sizeof(governor),CPU1) == -1) {
+-                    if (get_scaling_governor_check_cores(governor,
+-                        sizeof(governor),CPU2) == -1) {
+-                            if (get_scaling_governor_check_cores(governor,
+-                                sizeof(governor),CPU3) == -1) {
+-                                    ALOGE("Can't obtain scaling governor.");
+-                                    return;
+-                            }
+-                    }
+-            }
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata,
+-            &video_encode_metadata) == -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR,
+-            strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_CPU0_30, TR_MS_CPU4_30};
+-            if (!video_encode_hint_sent) {
+-                perform_hint_action(video_encode_metadata.hint_id,
+-                resource_values,
+-                ARRAY_SIZE(resource_values));
+-                video_encode_hint_sent = 1;
+-            }
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR,
+-            strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-            video_encode_hint_sent = 0;
+-            return ;
+-        }
+-    }
+-    return;
+-}
+diff --git a/power/power-8952.c b/power/power-8952.c
+deleted file mode 100644
+index 05955d1..0000000
+--- a/power/power-8952.c
++++ /dev/null
+@@ -1,294 +0,0 @@
+-/*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QTI PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int video_encode_hint_sent;
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void process_video_encode_hint(void *metadata);
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-static int profile_high_performance_8952[11] = {
+-    SCHED_BOOST_ON,
+-    0x704, 0x4d04, /* Enable all CPUs */
+-    CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-    CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX,
+-    CPU4_MIN_FREQ_TURBO_MAX, CPU5_MIN_FREQ_TURBO_MAX,
+-    CPU6_MIN_FREQ_TURBO_MAX, CPU7_MIN_FREQ_TURBO_MAX,
+-};
+-
+-static int profile_power_save_8952[] = {
+-    0x8fe, 0x3dfd, /* 1 big core, 2 little cores*/
+-    CPUS_ONLINE_MAX_LIMIT_2,
+-    CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-    CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX,
+-};
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int *resource_values = profile_high_performance_8952;
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, resource_values,
+-                ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int *resource_values = profile_power_save_8952;
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, resource_values,
+-                ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-int  power_hint_override(struct power_module *module, power_hint_t hint,
+-        void *data)
+-{
+-    int duration, duration_hint;
+-    static unsigned long long previous_boost_time = 0;
+-    unsigned long long cur_boost_time;
+-    struct timeval cur_boost_timeval = {0, 0};
+-    double elapsed_time;
+-    int resources_launch_boost[] = {
+-        ALL_CPUS_PWR_CLPS_DIS,
+-        SCHED_BOOST_ON,
+-        SCHED_PREFER_IDLE_DIS,
+-        0x20f,
+-        0x4001,
+-        0x4101,
+-        0x4201,
+-    };
+-    int resources_cpu_boost[] = {
+-        ALL_CPUS_PWR_CLPS_DIS,
+-        SCHED_BOOST_ON,
+-        SCHED_PREFER_IDLE_DIS,
+-        0x20d,
+-    };
+-    int resources_interaction_boost[] = {
+-        SCHED_PREFER_IDLE_DIS,
+-        0x20d,
+-        0x3d01,
+-    };
+-
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    switch (hint) {
+-        case POWER_HINT_INTERACTION:
+-            duration = 500;
+-            duration_hint = 0;
+-
+-            if (data) {
+-                duration_hint = *((int *)data);
+-            }
+-
+-            duration = duration_hint > 0 ? duration_hint : 500;
+-
+-            gettimeofday(&cur_boost_timeval, NULL);
+-            cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-            elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-            if (elapsed_time > 750000)
+-                elapsed_time = 750000;
+-            // don't hint if it's been less than 250ms since last boost
+-            // also detect if we're doing anything resembling a fling
+-            // support additional boosting in case of flings
+-            else if (elapsed_time < 250000 && duration <= 750)
+-                return HINT_HANDLED;
+-
+-            previous_boost_time = cur_boost_time;
+-
+-            if (duration >= 1500) {
+-                interaction(duration, ARRAY_SIZE(resources_cpu_boost),
+-                        resources_cpu_boost);
+-            } else {
+-                interaction(duration, ARRAY_SIZE(resources_interaction_boost),
+-                        resources_interaction_boost);
+-            }
+-            return HINT_HANDLED;
+-        case POWER_HINT_LAUNCH_BOOST:
+-            duration = 2000;
+-            interaction(duration, ARRAY_SIZE(resources_launch_boost),
+-                    resources_launch_boost);
+-            return HINT_HANDLED;
+-        case POWER_HINT_CPU_BOOST:
+-            duration = *(int32_t *)data / 1000;
+-            if (duration > 0) {
+-                interaction(duration, ARRAY_SIZE(resources_cpu_boost),
+-                        resources_cpu_boost);
+-            }
+-            return HINT_HANDLED;
+-        case POWER_HINT_VIDEO_ENCODE:
+-            process_video_encode_hint(data);
+-            return HINT_HANDLED;
+-    }
+-    return HINT_NONE;
+-}
+-
+-int  set_interactive_override(struct power_module *module, int on)
+-{
+-    char governor[80];
+-
+-    ALOGI("Got set_interactive hint");
+-
+-    if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU0) == -1) {
+-        if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU1) == -1) {
+-            if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU2) == -1) {
+-                if (get_scaling_governor_check_cores(governor, sizeof(governor),CPU3) == -1) {
+-                    ALOGE("Can't obtain scaling governor.");
+-                    return HINT_HANDLED;
+-                }
+-            }
+-        }
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-             if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-               int resource_values[] = {TR_MS_CPU0_50, TR_MS_CPU4_50};
+-
+-                perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                        resource_values, ARRAY_SIZE(resource_values));
+-             } /* Perf time rate set for CORE0,CORE4 8952 target*/
+-
+-    } else {
+-        /* Display on. */
+-          if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-
+-             undo_hint_action(DISPLAY_STATE_HINT_ID);
+-          }
+-   }
+-    return HINT_HANDLED;
+-}
+-
+-/* Video Encode Hint */
+-static void process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    ALOGI("Got process_video_encode_hint");
+-
+-    if (get_scaling_governor_check_cores(governor,
+-        sizeof(governor),CPU0) == -1) {
+-            if (get_scaling_governor_check_cores(governor,
+-                sizeof(governor),CPU1) == -1) {
+-                    if (get_scaling_governor_check_cores(governor,
+-                        sizeof(governor),CPU2) == -1) {
+-                            if (get_scaling_governor_check_cores(governor,
+-                                sizeof(governor),CPU3) == -1) {
+-                                    ALOGE("Can't obtain scaling governor.");
+-                                    return;
+-                            }
+-                    }
+-            }
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata,
+-            &video_encode_metadata) == -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR,
+-            strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_CPU0_30, TR_MS_CPU4_30};
+-            if (!video_encode_hint_sent) {
+-                perform_hint_action(video_encode_metadata.hint_id,
+-                resource_values,
+-                ARRAY_SIZE(resource_values));
+-                video_encode_hint_sent = 1;
+-            }
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR,
+-            strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-            video_encode_hint_sent = 0;
+-            return ;
+-        }
+-    }
+-    return;
+-}
+diff --git a/power/power-8960.c b/power/power-8960.c
+deleted file mode 100644
+index cfdcb42..0000000
+--- a/power/power-8960.c
++++ /dev/null
+@@ -1,146 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2015, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-int get_number_of_profiles() {
+-    return 3;
+-}
+-
+-/**
+- * If target is 8064:
+- *     return 1
+- * else:
+- *     return 0
+- */
+-static int is_target_8064(void)
+-{
+-    static int is_8064 = -1;
+-    int soc_id;
+-
+-    if (is_8064 >= 0)
+-        return is_8064;
+-
+-    soc_id = get_soc_id();
+-    if (soc_id == 153)
+-        is_8064 = 1;
+-    else
+-        is_8064 = 0;
+-
+-    return is_8064;
+-}
+-
+-static int profile_high_performance_8960[3] = {
+-    CPUS_ONLINE_MIN_2,
+-    CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX
+-};
+-
+-static int profile_high_performance_8064[5] = {
+-    CPUS_ONLINE_MIN_4,
+-    CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-    CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX
+-};
+-
+-static int profile_power_save_8960[2] = {
+-    CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX
+-};
+-
+-static int profile_power_save_8064[5] = {
+-    CPUS_ONLINE_MAX_LIMIT_2,
+-    CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-    CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX
+-};
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int *resource_values = is_target_8064() ?
+-            profile_high_performance_8064 : profile_high_performance_8960;
+-
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int* resource_values = is_target_8064() ?
+-            profile_power_save_8064 : profile_power_save_8960;
+-
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        return HINT_HANDLED;
+-    }
+-
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8974.c b/power/power-8974.c
+deleted file mode 100644
+index 0b6a4b3..0000000
+--- a/power/power-8974.c
++++ /dev/null
+@@ -1,231 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2014, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int first_display_off_hint;
+-extern int display_boost;
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-int get_number_of_profiles() {
+-    return 5;
+-}
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MIN_4, 0x0901,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_BIAS_PERFORMANCE) {
+-        int resource_values[] = {
+-            CPU0_MIN_FREQ_NONTURBO_MAX + 1, CPU1_MIN_FREQ_NONTURBO_MAX + 1,
+-            CPU2_MIN_FREQ_NONTURBO_MAX + 1, CPU2_MIN_FREQ_NONTURBO_MAX + 1 };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias perf mode", __func__);
+-    } else if (profile == PROFILE_BIAS_POWER) {
+-        int resource_values[] = { 0x0A03,
+-            CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-            CPU1_MAX_FREQ_NONTURBO_MAX, CPU2_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias power mode", __func__);
+-    } else if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { 0x0A03, CPUS_ONLINE_MAX_LIMIT_2,
+-            CPU0_MAX_FREQ_NONTURBO_MAX, CPU1_MAX_FREQ_NONTURBO_MAX,
+-            CPU2_MAX_FREQ_NONTURBO_MAX, CPU3_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in high/low power modes
+-    if (current_power_profile == PROFILE_POWER_SAVE ||
+-            current_power_profile == PROFILE_HIGH_PERFORMANCE) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_LAUNCH_BOOST) {
+-        int duration = 2000;
+-        int resources[] = { CPUS_ONLINE_MIN_3,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX };
+-
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { CPUS_ONLINE_MIN_2,
+-            0x20F, 0x30F, 0x40F, 0x50F };
+-
+-        if (duration)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_INTERACTION) {
+-        int duration = 500, duration_hint = 0;
+-        static unsigned long long previous_boost_time = 0;
+-
+-        if (data) {
+-            duration_hint = *((int *)data);
+-        }
+-
+-        duration = duration_hint > 0 ? duration_hint : 500;
+-
+-        struct timeval cur_boost_timeval = {0, 0};
+-        gettimeofday(&cur_boost_timeval, NULL);
+-        unsigned long long cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-        double elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-        if (elapsed_time > 750000)
+-            elapsed_time = 750000;
+-        // don't hint if it's been less than 250ms since last boost
+-        // also detect if we're doing anything resembling a fling
+-        // support additional boosting in case of flings
+-        else if (elapsed_time < 250000 && duration <= 750)
+-            return HINT_HANDLED;
+-
+-        previous_boost_time = cur_boost_time;
+-
+-        int resources[] = { (duration >= 2000 ? CPUS_ONLINE_MIN_3 : CPUS_ONLINE_MIN_2),
+-            0x20F, 0x30F, 0x40F, 0x50F };
+-
+-        if (duration)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-
+-    return HINT_NONE;
+-}
+-
+-int set_interactive_override(struct power_module *module __unused, int on)
+-{
+-    char governor[80];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-        /*
+-         * We need to be able to identify the first display off hint
+-         * and release the current lock holder
+-         */
+-        if (display_boost) {
+-            if (!first_display_off_hint) {
+-                undo_initial_hint_action();
+-                first_display_off_hint = 1;
+-            }
+-            /* used for all subsequent toggles to the display */
+-            undo_hint_action(DISPLAY_STATE_HINT_ID_2);
+-        }
+-
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {MS_500, SYNC_FREQ_600, OPTIMAL_FREQ_600, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-
+-            return HINT_HANDLED;
+-        }
+-    } else {
+-        /* Display on */
+-        if (display_boost) {
+-            int resource_values2[] = {CPUS_ONLINE_MIN_2};
+-            perform_hint_action(DISPLAY_STATE_HINT_ID_2,
+-                    resource_values2, ARRAY_SIZE(resource_values2));
+-        }
+-
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-
+-            return HINT_HANDLED;
+-        }
+-    }
+-
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8992.c b/power/power-8992.c
+deleted file mode 100644
+index eee3443..0000000
+--- a/power/power-8992.c
++++ /dev/null
+@@ -1,276 +0,0 @@
+-/*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-int get_number_of_profiles() {
+-    return 5;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { CPUS_ONLINE_MPD_OVERRIDE, 0x0A03,
+-            CPU0_MAX_FREQ_NONTURBO_MAX - 2, CPU1_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU2_MAX_FREQ_NONTURBO_MAX - 2, CPU3_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU4_MAX_FREQ_NONTURBO_MAX - 2, CPU5_MAX_FREQ_NONTURBO_MAX - 2 };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    } else if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { SCHED_BOOST_ON, CPUS_ONLINE_MAX,
+-            ALL_CPUS_PWR_CLPS_DIS, 0x0901,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX,
+-            CPU4_MIN_FREQ_TURBO_MAX, CPU5_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_BIAS_POWER) {
+-        int resource_values[] = { 0x0A03, 0x0902,
+-            CPU0_MAX_FREQ_NONTURBO_MAX - 2, CPU1_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU1_MAX_FREQ_NONTURBO_MAX - 2, CPU2_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU4_MAX_FREQ_NONTURBO_MAX, CPU5_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias power mode", __func__);
+-    } else if (profile == PROFILE_BIAS_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MAX_LIMIT_MAX,
+-            CPU4_MIN_FREQ_NONTURBO_MAX + 1, CPU5_MIN_FREQ_NONTURBO_MAX + 1 };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias perf mode", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-static int process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    /* Initialize encode metadata struct fields */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return HINT_NONE;
+-        }
+-    } else {
+-        return HINT_NONE;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            /* sched and cpufreq params
+-             * hispeed freq - 768 MHz
+-             * target load - 90
+-             * above_hispeed_delay - 40ms
+-             * sched_small_tsk - 50
+-             */
+-            int resource_values[] = {0x2C07, 0x2F5A, 0x2704, 0x4032};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            return HINT_HANDLED;
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile == PROFILE_POWER_SAVE) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_INTERACTION) {
+-        int duration = 500, duration_hint = 0;
+-        static unsigned long long previous_boost_time = 0;
+-
+-        if (data) {
+-            duration_hint = *((int *)data);
+-        }
+-
+-        duration = duration_hint > 0 ? duration_hint : 500;
+-
+-        struct timeval cur_boost_timeval = {0, 0};
+-        gettimeofday(&cur_boost_timeval, NULL);
+-        unsigned long long cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-        double elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-        if (elapsed_time > 750000)
+-            elapsed_time = 750000;
+-        // don't hint if it's been less than 250ms since last boost
+-        // also detect if we're doing anything resembling a fling
+-        // support additional boosting in case of flings
+-        else if (elapsed_time < 250000 && duration <= 750)
+-            return HINT_HANDLED;
+-
+-        previous_boost_time = cur_boost_time;
+-
+-        if (duration >= 1500) {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_BOOST_ON,
+-                SCHED_PREFER_IDLE_DIS
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        } else {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_PREFER_IDLE_DIS
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        }
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_LAUNCH_BOOST) {
+-        launch_boost_info_t *info = (launch_boost_info_t *)data;
+-        if (info == NULL) {
+-            ALOGE("Invalid argument for launch boost");
+-            return HINT_HANDLED;
+-        }
+-
+-        ALOGV("LAUNCH_BOOST: %s (pid=%d)", info->packageName, info->pid);
+-
+-        int duration = 2000;
+-        int resources[] = { SCHED_BOOST_ON, 0x20C };
+-
+-        start_prefetch(info->pid, info->packageName);
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { SCHED_BOOST_ON };
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_VIDEO_ENCODE) {
+-        return process_video_encode_hint(data);
+-    }
+-
+-    return HINT_NONE;
+-}
+-
+-int set_interactive_override(__attribute__((unused)) struct power_module *module, int on)
+-{
+-    char governor[80];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    if (!on) {
+-        /* Display off */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            // sched upmigrate = 99, sched downmigrate = 95
+-            // keep the big cores around, but make them very hard to use
+-            int resource_values[] = { 0x4E63, 0x4F5F };
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            return HINT_HANDLED;
+-        }
+-    } else {
+-        /* Display on */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8994.c b/power/power-8994.c
+deleted file mode 100644
+index 3d93288..0000000
+--- a/power/power-8994.c
++++ /dev/null
+@@ -1,286 +0,0 @@
+-/*
+- * Copyright (c) 2014, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-int get_number_of_profiles() {
+-    return 5;
+-}
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_POWER_SAVE) {
+-        int resource_values[] = { CPUS_ONLINE_MPD_OVERRIDE, 0x0A03,
+-            CPU0_MAX_FREQ_NONTURBO_MAX - 2, CPU1_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU2_MAX_FREQ_NONTURBO_MAX - 2, CPU3_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU4_MAX_FREQ_NONTURBO_MAX - 2, CPU5_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU6_MAX_FREQ_NONTURBO_MAX - 2, CPU7_MAX_FREQ_NONTURBO_MAX - 2 };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set powersave", __func__);
+-    } else if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        int resource_values[] = { SCHED_BOOST_ON, CPUS_ONLINE_MAX,
+-            ALL_CPUS_PWR_CLPS_DIS, 0x0901,
+-            CPU0_MIN_FREQ_TURBO_MAX, CPU1_MIN_FREQ_TURBO_MAX,
+-            CPU2_MIN_FREQ_TURBO_MAX, CPU3_MIN_FREQ_TURBO_MAX,
+-            CPU4_MIN_FREQ_TURBO_MAX, CPU5_MIN_FREQ_TURBO_MAX,
+-            CPU6_MIN_FREQ_TURBO_MAX, CPU7_MIN_FREQ_TURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set performance mode", __func__);
+-    } else if (profile == PROFILE_BIAS_POWER) {
+-        int resource_values[] = { 0x0A03, 0x0902,
+-            CPU0_MAX_FREQ_NONTURBO_MAX - 2, CPU1_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU1_MAX_FREQ_NONTURBO_MAX - 2, CPU2_MAX_FREQ_NONTURBO_MAX - 2,
+-            CPU4_MAX_FREQ_NONTURBO_MAX, CPU5_MAX_FREQ_NONTURBO_MAX,
+-            CPU6_MAX_FREQ_NONTURBO_MAX, CPU7_MAX_FREQ_NONTURBO_MAX };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias power mode", __func__);
+-    } else if (profile == PROFILE_BIAS_PERFORMANCE) {
+-        int resource_values[] = { CPUS_ONLINE_MAX_LIMIT_MAX,
+-            CPU4_MIN_FREQ_NONTURBO_MAX + 1, CPU5_MIN_FREQ_NONTURBO_MAX + 1,
+-            CPU6_MIN_FREQ_NONTURBO_MAX + 1, CPU7_MIN_FREQ_NONTURBO_MAX + 1 };
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID,
+-            resource_values, ARRAY_SIZE(resource_values));
+-        ALOGD("%s: set bias perf mode", __func__);
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-#ifdef __LP64__
+-typedef int64_t hintdata;
+-#else
+-typedef int hintdata;
+-#endif
+-
+-static int process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    /* Initialize encode metadata struct fields */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return HINT_NONE;
+-        }
+-    } else {
+-        return HINT_NONE;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            /* sched and cpufreq params
+-             * hispeed freq - 768 MHz
+-             * target load - 90
+-             * above_hispeed_delay - 40ms
+-             * sched_small_tsk - 50
+-             */
+-            int resource_values[] = {0x2C07, 0x2F5A, 0x2704, 0x4032};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            return HINT_HANDLED;
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+-
+-int power_hint_override(__attribute__((unused)) struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    // Skip other hints in custom power modes
+-    if (current_power_profile == PROFILE_POWER_SAVE) {
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_INTERACTION) {
+-        int duration = 500, duration_hint = 0;
+-        static unsigned long long previous_boost_time = 0;
+-
+-        if (data) {
+-            duration_hint = *((int *)data);
+-        }
+-
+-        duration = duration_hint > 0 ? duration_hint : 500;
+-
+-        struct timeval cur_boost_timeval = {0, 0};
+-        gettimeofday(&cur_boost_timeval, NULL);
+-        unsigned long long cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-        double elapsed_time = (double)(cur_boost_time - previous_boost_time);
+-        if (elapsed_time > 750000)
+-            elapsed_time = 750000;
+-        // don't hint if it's been less than 250ms since last boost
+-        // also detect if we're doing anything resembling a fling
+-        // support additional boosting in case of flings
+-        else if (elapsed_time < 250000 && duration <= 750)
+-            return HINT_HANDLED;
+-
+-        previous_boost_time = cur_boost_time;
+-
+-        if (duration >= 1500) {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_BOOST_ON,
+-                SCHED_PREFER_IDLE_DIS
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        } else {
+-            int resources[] = {
+-                ALL_CPUS_PWR_CLPS_DIS,
+-                SCHED_PREFER_IDLE_DIS
+-            };
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-        }
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_LAUNCH_BOOST) {
+-        launch_boost_info_t *info = (launch_boost_info_t *)data;
+-        if (info == NULL) {
+-            ALOGE("Invalid argument for launch boost");
+-            return HINT_HANDLED;
+-        }
+-
+-        ALOGV("LAUNCH_BOOST: %s (pid=%d)", info->packageName, info->pid);
+-
+-        int duration = 2000;
+-        int resources[] = { SCHED_BOOST_ON, 0x20C };
+-
+-        start_prefetch(info->pid, info->packageName);
+-        interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        int duration = *(int32_t *)data / 1000;
+-        int resources[] = { SCHED_BOOST_ON };
+-
+-        if (duration > 0)
+-            interaction(duration, ARRAY_SIZE(resources), resources);
+-
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_VIDEO_ENCODE) {
+-        return process_video_encode_hint(data);
+-    }
+-
+-    return HINT_NONE;
+-}
+-
+-int set_interactive_override(__attribute__((unused)) struct power_module *module, int on)
+-{
+-    char governor[80];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    if (!on) {
+-        /* Display off */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            // sched upmigrate = 99, sched downmigrate = 95
+-            // keep the big cores around, but make them very hard to use
+-            int resource_values[] = { 0x4E63, 0x4F5F };
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            return HINT_HANDLED;
+-        }
+-    } else {
+-        /* Display on */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+diff --git a/power/power-8996.c b/power/power-8996.c
+deleted file mode 100644
+index 0e1bdf9..0000000
+--- a/power/power-8996.c
++++ /dev/null
+@@ -1,411 +0,0 @@
+-/*
+- * Copyright (c) 2015, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-
+-static int current_power_profile = PROFILE_BALANCED;
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-int get_number_of_profiles() {
+-    return 5;
+-}
+-
+-static int profile_high_performance[] = {
+-    SCHED_BOOST_ON_V3, 0x1,
+-    ALL_CPUS_PWR_CLPS_DIS_V3, 0x1,
+-    CPUS_ONLINE_MIN_BIG, 0x2,
+-    CPUS_ONLINE_MIN_LITTLE, 0x2,
+-    MIN_FREQ_BIG_CORE_0, 0xFFF,
+-    MIN_FREQ_LITTLE_CORE_0, 0xFFF,
+-};
+-
+-static int profile_power_save[] = {
+-    CPUS_ONLINE_MAX_LIMIT_BIG, 0x1,
+-    MAX_FREQ_BIG_CORE_0, 0x3E8,
+-    MAX_FREQ_LITTLE_CORE_0, 0x3E8,
+-};
+-
+-static int profile_bias_power[] = {
+-    MAX_FREQ_BIG_CORE_0, 0x514,
+-    MAX_FREQ_LITTLE_CORE_0, 0x3E8,
+-};
+-
+-static int profile_bias_performance[] = {
+-    CPUS_ONLINE_MAX_LIMIT_BIG, 0x2,
+-    CPUS_ONLINE_MAX_LIMIT_LITTLE, 0x2,
+-    MIN_FREQ_BIG_CORE_0, 0x578,
+-};
+-
+-static void set_power_profile(int profile) {
+-
+-    if (profile == current_power_profile)
+-        return;
+-
+-    ALOGV("%s: Profile=%d", __func__, profile);
+-
+-    if (current_power_profile != PROFILE_BALANCED) {
+-        undo_hint_action(DEFAULT_PROFILE_HINT_ID);
+-        ALOGV("%s: Hint undone", __func__);
+-    }
+-
+-    if (profile == PROFILE_POWER_SAVE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_power_save,
+-                ARRAY_SIZE(profile_power_save));
+-        ALOGD("%s: Set powersave mode", __func__);
+-
+-    } else if (profile == PROFILE_HIGH_PERFORMANCE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_high_performance,
+-                ARRAY_SIZE(profile_high_performance));
+-        ALOGD("%s: Set performance mode", __func__);
+-
+-    } else if (profile == PROFILE_BIAS_POWER) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_bias_power,
+-                ARRAY_SIZE(profile_bias_power));
+-        ALOGD("%s: Set bias power mode", __func__);
+-
+-    } else if (profile == PROFILE_BIAS_PERFORMANCE) {
+-        perform_hint_action(DEFAULT_PROFILE_HINT_ID, profile_bias_performance,
+-                ARRAY_SIZE(profile_bias_performance));
+-        ALOGD("%s: Set bias perf mode", __func__);
+-
+-    }
+-
+-    current_power_profile = profile;
+-}
+-
+-static int process_cam_preview_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct cam_preview_metadata_t cam_preview_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    /* Initialize encode metadata struct fields */
+-    memset(&cam_preview_metadata, 0, sizeof(struct cam_preview_metadata_t));
+-    cam_preview_metadata.state = -1;
+-    cam_preview_metadata.hint_id = CAM_PREVIEW_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_cam_preview_metadata((char *)metadata, &cam_preview_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return HINT_NONE;
+-        }
+-    } else {
+-        return HINT_NONE;
+-    }
+-
+-    if (cam_preview_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            /* sched and cpufreq params
+-             * above_hispeed_delay for LVT - 40ms
+-             * go hispeed load for LVT - 95
+-             * hispeed freq for LVT - 556 MHz
+-             * target load for LVT - 90
+-             * above hispeed delay for sLVT - 40ms
+-             * go hispeed load for sLVT - 95
+-             * hispeed freq for sLVT - 556 MHz
+-             * target load for sLVT - 90
+-             * bus DCVS set to V2 config:
+-             *  low power ceil mpbs - 2500
+-             *  low power io percent - 50
+-             */
+-            int resource_values[] = {
+-                ABOVE_HISPEED_DELAY_BIG, 0x4,
+-                GO_HISPEED_LOAD_BIG, 0x5F,
+-                HISPEED_FREQ_BIG, 0x22C,
+-                TARGET_LOADS_BIG, 0x5A,
+-                ABOVE_HISPEED_DELAY_LITTLE, 0x4,
+-                GO_HISPEED_LOAD_LITTLE, 0x5F,
+-                HISPEED_FREQ_LITTLE, 0x22C,
+-                TARGET_LOADS_LITTLE, 0x5A,
+-                LOW_POWER_CEIL_MBPS, 0x9C4,
+-                LOW_POWER_IO_PERCENT, 0x32,
+-            };
+-
+-            perform_hint_action(cam_preview_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            ALOGI("Cam Preview hint start");
+-            return HINT_HANDLED;
+-        }
+-    } else if (cam_preview_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(cam_preview_metadata.hint_id);
+-            ALOGI("Cam Preview hint stop");
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+-
+-static int process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    /* Initialize encode metadata struct fields */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return HINT_NONE;
+-        }
+-    } else {
+-        return HINT_NONE;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            /* 1. cpufreq params
+-             *    -above_hispeed_delay for LVT - 40ms
+-             *    -go hispeed load for LVT - 95
+-             *    -hispeed freq for LVT - 556 MHz
+-             *    -target load for LVT - 90
+-             *    -above hispeed delay for sLVT - 40ms
+-             *    -go hispeed load for sLVT - 95
+-             *    -hispeed freq for sLVT - 806 MHz
+-             *    -target load for sLVT - 90
+-             * 2. bus DCVS set to V2 config:
+-             *    -low power ceil mpbs - 2500
+-             *    -low power io percent - 50
+-             * 3. hysteresis optimization
+-             *    -bus dcvs hysteresis tuning
+-             *    -sample_ms of 10 ms
+-             *    -disable ignore_hispeed_notif
+-             */
+-            int resource_values[] = {
+-                ABOVE_HISPEED_DELAY_BIG, 0x4,
+-                GO_HISPEED_LOAD_BIG, 0x5F,
+-                HISPEED_FREQ_BIG, 0x326,
+-                TARGET_LOADS_BIG, 0x5A,
+-                ABOVE_HISPEED_DELAY_LITTLE, 0x4,
+-                GO_HISPEED_LOAD_LITTLE, 0x5F,
+-                HISPEED_FREQ_LITTLE, 0x22C,
+-                TARGET_LOADS_LITTLE, 0x5A,
+-                LOW_POWER_CEIL_MBPS, 0x9C4,
+-                LOW_POWER_IO_PERCENT, 0x32,
+-                CPUBW_HWMON_V1, 0x0,
+-                CPUBW_HWMON_SAMPLE_MS, 0xA,
+-                IGNORE_HISPEED_NOTIF_LITTLE, 0x0,
+-                IGNORE_HISPEED_NOTIF_BIG, 0x0,
+-            };
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            ALOGI("Video Encode hint start");
+-            return HINT_HANDLED;
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-            ALOGI("Video Encode hint stop");
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+-
+-int power_hint_override(__unused struct power_module *module,
+-        power_hint_t hint, void *data)
+-{
+-    struct timeval cur_boost_timeval = {0, 0};
+-    static unsigned long long previous_boost_time = 0;
+-    unsigned long long cur_boost_time;
+-    double elapsed_time;
+-    int duration;
+-
+-    int resources_launch_boost[] = {
+-        SCHED_BOOST_ON_V3, 0x1,
+-        MAX_FREQ_BIG_CORE_0, 0xFFF,
+-        MAX_FREQ_LITTLE_CORE_0, 0xFFF,
+-        MIN_FREQ_BIG_CORE_0, 0xFFF,
+-        MIN_FREQ_LITTLE_CORE_0, 0xFFF,
+-        CPUBW_HWMON_MIN_FREQ, 0x8C,
+-        ALL_CPUS_PWR_CLPS_DIS_V3, 0x1,
+-        STOR_CLK_SCALE_DIS, 0x1,
+-    };
+-
+-    int resources_cpu_boost[] = {
+-        SCHED_BOOST_ON_V3, 0x1,
+-        MIN_FREQ_BIG_CORE_0, 0x3E8,
+-    };
+-
+-    int resources_interaction_fling_boost[] = {
+-        CPUBW_HWMON_MIN_FREQ, 0x33,
+-        MIN_FREQ_BIG_CORE_0, 0x3E8,
+-        MIN_FREQ_LITTLE_CORE_0, 0x3E8,
+-        SCHED_BOOST_ON_V3, 0x1,
+-   //   SCHED_GROUP_ON, 0x1,
+-    };
+-
+-    int resources_interaction_boost[] = {
+-        MIN_FREQ_BIG_CORE_0, 0x3E8,
+-    };
+-
+-    if (hint == POWER_HINT_SET_PROFILE) {
+-        set_power_profile(*(int32_t *)data);
+-        return HINT_HANDLED;
+-    }
+-
+-    /* Skip other hints in power save mode */
+-    if (current_power_profile == PROFILE_POWER_SAVE)
+-        return HINT_HANDLED;
+-
+-    if (hint == POWER_HINT_INTERACTION) {
+-        duration = data ? *((int *)data) : 500;
+-
+-        gettimeofday(&cur_boost_timeval, NULL);
+-        cur_boost_time = cur_boost_timeval.tv_sec * 1000000 + cur_boost_timeval.tv_usec;
+-        elapsed_time = (double) (cur_boost_time - previous_boost_time);
+-        if (elapsed_time > 750000)
+-            elapsed_time = 750000;
+-        /**
+-         * Don't hint if it's been less than 250ms since last boost
+-         * also detect if we're doing anything resembling a fling
+-         * support additional boosting in case of flings
+-         */
+-        else if (elapsed_time < 250000 && duration <= 750)
+-            return HINT_HANDLED;
+-
+-        previous_boost_time = cur_boost_time;
+-
+-        if (duration >= 1500) {
+-            interaction(duration, ARRAY_SIZE(resources_interaction_fling_boost),
+-                    resources_interaction_fling_boost);
+-        } else {
+-            interaction(duration, ARRAY_SIZE(resources_interaction_boost),
+-                    resources_interaction_boost);
+-        }
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_LAUNCH_BOOST) {
+-        launch_boost_info_t *info = (launch_boost_info_t *)data;
+-        if (info == NULL) {
+-            ALOGE("Invalid argument for launch boost");
+-            return HINT_HANDLED;
+-        }
+-
+-        duration = 2000;
+-
+-        ALOGV("LAUNCH_BOOST: %s (pid=%d)", info->packageName, info->pid);
+-
+-        start_prefetch(info->pid, info->packageName);
+-        interaction(duration, ARRAY_SIZE(resources_launch_boost),
+-                resources_launch_boost);
+-        return HINT_HANDLED;
+-    }
+-
+-    if (hint == POWER_HINT_CPU_BOOST) {
+-        duration = *(int32_t *)data / 1000;
+-        if (duration > 0) {
+-            interaction(duration, ARRAY_SIZE(resources_cpu_boost),
+-                    resources_cpu_boost);
+-            return HINT_HANDLED;
+-        }
+-    }
+-
+-    if (hint == POWER_HINT_CAM_PREVIEW)
+-        return process_cam_preview_hint(data);
+-
+-    if (hint == POWER_HINT_VIDEO_ENCODE)
+-        return process_video_encode_hint(data);
+-
+-    return HINT_NONE;
+-}
+-
+-int set_interactive_override(__unused struct power_module *module, int on)
+-{
+-    return HINT_HANDLED; /* Don't excecute this code path, not in use */
+-    char governor[80];
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return HINT_NONE;
+-    }
+-
+-    if (!on) {
+-        /* Display off */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {}; /* dummy node */
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-            ALOGI("Display Off hint start");
+-            return HINT_HANDLED;
+-        }
+-    } else {
+-        /* Display on */
+-        if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-            (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-            ALOGI("Display Off hint stop");
+-            return HINT_HANDLED;
+-        }
+-    }
+-    return HINT_NONE;
+-}
+diff --git a/power/power-common.h b/power/power-common.h
+deleted file mode 100644
+index 68d1341..0000000
+--- a/power/power-common.h
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define NODE_MAX (64)
+-
+-#define SCALING_GOVERNOR_PATH "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
+-#define DCVS_CPU0_SLACK_MAX_NODE "/sys/module/msm_dcvs/cores/cpu0/slack_time_max_us"
+-#define DCVS_CPU0_SLACK_MIN_NODE "/sys/module/msm_dcvs/cores/cpu0/slack_time_min_us"
+-#define MPDECISION_SLACK_MAX_NODE "/sys/module/msm_mpdecision/slack_time_max_us"
+-#define MPDECISION_SLACK_MIN_NODE "/sys/module/msm_mpdecision/slack_time_min_us"
+-#define SCALING_MIN_FREQ "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"
+-
+-#define ONDEMAND_GOVERNOR "ondemand"
+-#define INTERACTIVE_GOVERNOR "interactive"
+-#define MSMDCVS_GOVERNOR "msm-dcvs"
+-
+-#define HINT_HANDLED (0)
+-#define HINT_NONE (-1)
+-
+-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+-
+-enum CPU_GOV_CHECK {
+-    CPU0 = 0,
+-    CPU1 = 1,
+-    CPU2 = 2,
+-    CPU3 = 3
+-};
+-
+-enum {
+-    PROFILE_POWER_SAVE = 0,
+-    PROFILE_BALANCED,
+-    PROFILE_HIGH_PERFORMANCE,
+-    PROFILE_BIAS_POWER,
+-    PROFILE_BIAS_PERFORMANCE
+-};
+diff --git a/power/power-feature-default.c b/power/power-feature-default.c
+deleted file mode 100644
+index c432aa8..0000000
+--- a/power/power-feature-default.c
++++ /dev/null
+@@ -1,24 +0,0 @@
+-/*
+- * Copyright (C) 2015 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-#include <hardware/power.h>
+-#include "power-feature.h"
+-
+-void set_device_specific_feature(struct power_module *module __unused,
+-    feature_t feature __unused, int state __unused)
+-{
+-}
+-
+diff --git a/power/power-feature.h b/power/power-feature.h
+deleted file mode 100644
+index 595e3dd..0000000
+--- a/power/power-feature.h
++++ /dev/null
+@@ -1,24 +0,0 @@
+-/*
+- * Copyright (C) 2015 The CyanogenMod Project
+- *
+- * Licensed under the Apache License, Version 2.0 (the "License");
+- * you may not use this file except in compliance with the License.
+- * You may obtain a copy of the License at
+- *
+- *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+- * Unless required by applicable law or agreed to in writing, software
+- * distributed under the License is distributed on an "AS IS" BASIS,
+- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- * See the License for the specific language governing permissions and
+- * limitations under the License.
+- */
+-
+-#ifndef _QCOM_POWER_FEATURE_H
+-#define _QCOM_POWER_FEATURE_H
+-
+-#include <hardware/power.h>
+-
+-void set_device_specific_feature(struct power_module *module, feature_t feature, int state);
+-
+-#endif
+diff --git a/power/power.c b/power/power.c
+deleted file mode 100644
+index 969ae62..0000000
+--- a/power/power.c
++++ /dev/null
+@@ -1,492 +0,0 @@
+-/*
+- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2014, The CyanogenMod Project
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#define LOG_NIDEBUG 0
+-
+-#include <errno.h>
+-#include <string.h>
+-#include <sys/types.h>
+-#include <sys/stat.h>
+-#include <fcntl.h>
+-#include <dlfcn.h>
+-#include <stdlib.h>
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-#include <hardware/hardware.h>
+-#include <hardware/power.h>
+-#include <pthread.h>
+-
+-#include "utils.h"
+-#include "metadata-defs.h"
+-#include "hint-data.h"
+-#include "performance.h"
+-#include "power-common.h"
+-#include "power-feature.h"
+-
+-static int saved_dcvs_cpu0_slack_max = -1;
+-static int saved_dcvs_cpu0_slack_min = -1;
+-static int saved_mpdecision_slack_max = -1;
+-static int saved_mpdecision_slack_min = -1;
+-static int slack_node_rw_failed = 0;
+-static int display_hint_sent;
+-int display_boost;
+-
+-static struct hw_module_methods_t power_module_methods = {
+-    .open = NULL,
+-};
+-
+-static pthread_mutex_t hint_mutex = PTHREAD_MUTEX_INITIALIZER;
+-
+-static void power_init(__attribute__((unused))struct power_module *module)
+-{
+-    int soc_id;
+-
+-    ALOGI("QCOM power HAL initing.");
+-
+-    soc_id = get_soc_id();
+-    if (soc_id == 178 || soc_id == 194 ||
+-            (soc_id >= 208 && soc_id <= 218))
+-        display_boost = 1;
+-}
+-
+-static void process_video_decode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_decode_metadata_t video_decode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return;
+-    }
+-
+-    if (metadata) {
+-        ALOGI("Processing video decode hint. Metadata: %s", (char *)metadata);
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_decode_metadata, 0, sizeof(struct video_decode_metadata_t));
+-    video_decode_metadata.state = -1;
+-    video_decode_metadata.hint_id = DEFAULT_VIDEO_DECODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_decode_metadata((char *)metadata, &video_decode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_decode_metadata.state == 1) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(video_decode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_30, HISPEED_LOAD_90, HS_FREQ_1026, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(video_decode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        }
+-    } else if (video_decode_metadata.state == 0) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(video_decode_metadata.hint_id);
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_decode_metadata.hint_id);
+-        }
+-    }
+-}
+-
+-static void process_video_encode_hint(void *metadata)
+-{
+-    char governor[80];
+-    struct video_encode_metadata_t video_encode_metadata;
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-
+-        return;
+-    }
+-
+-    /* Initialize encode metadata struct fields. */
+-    memset(&video_encode_metadata, 0, sizeof(struct video_encode_metadata_t));
+-    video_encode_metadata.state = -1;
+-    video_encode_metadata.hint_id = DEFAULT_VIDEO_ENCODE_HINT_ID;
+-
+-    if (metadata) {
+-        if (parse_video_encode_metadata((char *)metadata, &video_encode_metadata) ==
+-            -1) {
+-            ALOGE("Error occurred while parsing metadata.");
+-            return;
+-        }
+-    } else {
+-        return;
+-    }
+-
+-    if (video_encode_metadata.state == 1) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = {IO_BUSY_OFF, SAMPLING_DOWN_FACTOR_1, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_30, HISPEED_LOAD_90, HS_FREQ_1026, THREAD_MIGRATION_SYNC_OFF,
+-                INTERACTIVE_IO_BUSY_OFF};
+-
+-            perform_hint_action(video_encode_metadata.hint_id,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        }
+-    } else if (video_encode_metadata.state == 0) {
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(video_encode_metadata.hint_id);
+-        }
+-    }
+-}
+-
+-int __attribute__ ((weak)) power_hint_override(
+-        __attribute__((unused)) struct power_module *module,
+-        __attribute__((unused)) power_hint_t hint,
+-        __attribute__((unused)) void *data)
+-{
+-    return HINT_NONE;
+-}
+-
+-extern void interaction(int duration, int num_args, int opt_list[]);
+-
+-static void power_hint(__attribute__((unused)) struct power_module *module, power_hint_t hint,
+-        void *data)
+-{
+-    pthread_mutex_lock(&hint_mutex);
+-
+-    /* Check if this hint has been overridden. */
+-    if (power_hint_override(module, hint, data) == HINT_HANDLED) {
+-        /* The power_hint has been handled. We can skip the rest. */
+-        goto out;
+-    }
+-
+-    switch(hint) {
+-        case POWER_HINT_VSYNC:
+-        case POWER_HINT_INTERACTION:
+-        case POWER_HINT_CPU_BOOST:
+-        case POWER_HINT_LAUNCH_BOOST:
+-        case POWER_HINT_AUDIO:
+-        case POWER_HINT_SET_PROFILE:
+-        case POWER_HINT_LOW_POWER:
+-        break;
+-        case POWER_HINT_VIDEO_ENCODE:
+-            process_video_encode_hint(data);
+-        break;
+-        case POWER_HINT_VIDEO_DECODE:
+-            process_video_decode_hint(data);
+-        break;
+-        default:
+-        break;
+-    }
+-
+-out:
+-    pthread_mutex_unlock(&hint_mutex);
+-}
+-
+-int __attribute__ ((weak)) set_interactive_override(
+-        __attribute__((unused)) struct power_module *module,
+-        __attribute__((unused)) int on)
+-{
+-    return HINT_NONE;
+-}
+-
+-int __attribute__ ((weak)) get_number_of_profiles()
+-{
+-    return 0;
+-}
+-
+-#ifdef SET_INTERACTIVE_EXT
+-extern void cm_power_set_interactive_ext(int on);
+-#endif
+-
+-void set_interactive(struct power_module *module, int on)
+-{
+-    char governor[80];
+-    char tmp_str[NODE_MAX];
+-    struct video_encode_metadata_t video_encode_metadata;
+-    int rc = 0;
+-
+-    pthread_mutex_lock(&hint_mutex);
+-
+-    /**
+-     * Ignore consecutive display-off hints
+-     * Consecutive display-on hints are already handled
+-     */
+-    if (display_hint_sent && !on)
+-        goto out;
+-
+-    display_hint_sent = !on;
+-
+-#ifdef SET_INTERACTIVE_EXT
+-    cm_power_set_interactive_ext(on);
+-#endif
+-
+-    if (set_interactive_override(module, on) == HINT_HANDLED) {
+-        goto out;
+-    }
+-
+-    ALOGI("Got set_interactive hint");
+-
+-    if (get_scaling_governor(governor, sizeof(governor)) == -1) {
+-        ALOGE("Can't obtain scaling governor.");
+-        goto out;
+-    }
+-
+-    if (!on) {
+-        /* Display off. */
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            int resource_values[] = { MS_500, THREAD_MIGRATION_SYNC_OFF };
+-
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            int resource_values[] = {TR_MS_50, THREAD_MIGRATION_SYNC_OFF};
+-
+-            perform_hint_action(DISPLAY_STATE_HINT_ID,
+-                    resource_values, ARRAY_SIZE(resource_values));
+-        } else if ((strncmp(governor, MSMDCVS_GOVERNOR, strlen(MSMDCVS_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(MSMDCVS_GOVERNOR))) {
+-            /* Display turned off. */
+-            if (sysfs_read(DCVS_CPU0_SLACK_MAX_NODE, tmp_str, NODE_MAX - 1)) {
+-                if (!slack_node_rw_failed) {
+-                    ALOGE("Failed to read from %s", DCVS_CPU0_SLACK_MAX_NODE);
+-                }
+-
+-                rc = 1;
+-            } else {
+-                saved_dcvs_cpu0_slack_max = atoi(tmp_str);
+-            }
+-
+-            if (sysfs_read(DCVS_CPU0_SLACK_MIN_NODE, tmp_str, NODE_MAX - 1)) {
+-                if (!slack_node_rw_failed) {
+-                    ALOGE("Failed to read from %s", DCVS_CPU0_SLACK_MIN_NODE);
+-                }
+-
+-                rc = 1;
+-            } else {
+-                saved_dcvs_cpu0_slack_min = atoi(tmp_str);
+-            }
+-
+-            if (sysfs_read(MPDECISION_SLACK_MAX_NODE, tmp_str, NODE_MAX - 1)) {
+-                if (!slack_node_rw_failed) {
+-                    ALOGE("Failed to read from %s", MPDECISION_SLACK_MAX_NODE);
+-                }
+-
+-                rc = 1;
+-            } else {
+-                saved_mpdecision_slack_max = atoi(tmp_str);
+-            }
+-
+-            if (sysfs_read(MPDECISION_SLACK_MIN_NODE, tmp_str, NODE_MAX - 1)) {
+-                if(!slack_node_rw_failed) {
+-                    ALOGE("Failed to read from %s", MPDECISION_SLACK_MIN_NODE);
+-                }
+-
+-                rc = 1;
+-            } else {
+-                saved_mpdecision_slack_min = atoi(tmp_str);
+-            }
+-
+-            /* Write new values. */
+-            if (saved_dcvs_cpu0_slack_max != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", 10 * saved_dcvs_cpu0_slack_max);
+-
+-                if (sysfs_write(DCVS_CPU0_SLACK_MAX_NODE, tmp_str) != 0) {
+-                    if (!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", DCVS_CPU0_SLACK_MAX_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_dcvs_cpu0_slack_min != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", 10 * saved_dcvs_cpu0_slack_min);
+-
+-                if (sysfs_write(DCVS_CPU0_SLACK_MIN_NODE, tmp_str) != 0) {
+-                    if(!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", DCVS_CPU0_SLACK_MIN_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_mpdecision_slack_max != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", 10 * saved_mpdecision_slack_max);
+-
+-                if (sysfs_write(MPDECISION_SLACK_MAX_NODE, tmp_str) != 0) {
+-                    if(!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", MPDECISION_SLACK_MAX_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_mpdecision_slack_min != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", 10 * saved_mpdecision_slack_min);
+-
+-                if (sysfs_write(MPDECISION_SLACK_MIN_NODE, tmp_str) != 0) {
+-                    if(!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", MPDECISION_SLACK_MIN_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            slack_node_rw_failed = rc;
+-        }
+-    } else {
+-        /* Display on. */
+-        if ((strncmp(governor, ONDEMAND_GOVERNOR, strlen(ONDEMAND_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(ONDEMAND_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-        } else if ((strncmp(governor, INTERACTIVE_GOVERNOR, strlen(INTERACTIVE_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(INTERACTIVE_GOVERNOR))) {
+-            undo_hint_action(DISPLAY_STATE_HINT_ID);
+-        } else if ((strncmp(governor, MSMDCVS_GOVERNOR, strlen(MSMDCVS_GOVERNOR)) == 0) &&
+-                (strlen(governor) == strlen(MSMDCVS_GOVERNOR))) {
+-            /* Display turned on. Restore if possible. */
+-            if (saved_dcvs_cpu0_slack_max != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", saved_dcvs_cpu0_slack_max);
+-
+-                if (sysfs_write(DCVS_CPU0_SLACK_MAX_NODE, tmp_str) != 0) {
+-                    if (!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", DCVS_CPU0_SLACK_MAX_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_dcvs_cpu0_slack_min != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", saved_dcvs_cpu0_slack_min);
+-
+-                if (sysfs_write(DCVS_CPU0_SLACK_MIN_NODE, tmp_str) != 0) {
+-                    if (!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", DCVS_CPU0_SLACK_MIN_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_mpdecision_slack_max != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", saved_mpdecision_slack_max);
+-
+-                if (sysfs_write(MPDECISION_SLACK_MAX_NODE, tmp_str) != 0) {
+-                    if (!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", MPDECISION_SLACK_MAX_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            if (saved_mpdecision_slack_min != -1) {
+-                snprintf(tmp_str, NODE_MAX, "%d", saved_mpdecision_slack_min);
+-
+-                if (sysfs_write(MPDECISION_SLACK_MIN_NODE, tmp_str) != 0) {
+-                    if (!slack_node_rw_failed) {
+-                        ALOGE("Failed to write to %s", MPDECISION_SLACK_MIN_NODE);
+-                    }
+-
+-                    rc = 1;
+-                }
+-            }
+-
+-            slack_node_rw_failed = rc;
+-        }
+-    }
+-
+-out:
+-    pthread_mutex_unlock(&hint_mutex);
+-}
+-
+-void set_feature(struct power_module *module, feature_t feature, int state)
+-{
+-#ifdef TAP_TO_WAKE_NODE
+-    char tmp_str[NODE_MAX];
+-    if (feature == POWER_FEATURE_DOUBLE_TAP_TO_WAKE) {
+-        snprintf(tmp_str, NODE_MAX, "%d", state);
+-        sysfs_write(TAP_TO_WAKE_NODE, tmp_str);
+-        return;
+-    }
+-#endif
+-    set_device_specific_feature(module, feature, state);
+-}
+-
+-int get_feature(struct power_module *module __unused, feature_t feature)
+-{
+-    if (feature == POWER_FEATURE_SUPPORTED_PROFILES) {
+-        return get_number_of_profiles();
+-    }
+-    return -1;
+-}
+-
+-struct power_module HAL_MODULE_INFO_SYM = {
+-    .common = {
+-        .tag = HARDWARE_MODULE_TAG,
+-        .module_api_version = POWER_MODULE_API_VERSION_0_3,
+-        .hal_api_version = HARDWARE_HAL_API_VERSION,
+-        .id = POWER_HARDWARE_MODULE_ID,
+-        .name = "QCOM Power HAL",
+-        .author = "Qualcomm/CyanogenMod",
+-        .methods = &power_module_methods,
+-    },
+-
+-    .init = power_init,
+-    .powerHint = power_hint,
+-    .setInteractive = set_interactive,
+-    .setFeature = set_feature,
+-    .getFeature = get_feature
+-};
+diff --git a/power/utils.c b/power/utils.c
+deleted file mode 100644
+index 202b718..0000000
+--- a/power/utils.c
++++ /dev/null
+@@ -1,414 +0,0 @@
+-/*
+- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-#define LOG_NIDEBUG 0
+-
+-#include <dlfcn.h>
+-#include <fcntl.h>
+-#include <errno.h>
+-#include <string.h>
+-#include <stdlib.h>
+-
+-#include "utils.h"
+-#include "list.h"
+-#include "hint-data.h"
+-#include "power-common.h"
+-
+-#define LOG_TAG "QCOM PowerHAL"
+-#include <utils/Log.h>
+-
+-#define SOC_ID_0 "/sys/devices/soc0/soc_id"
+-#define SOC_ID_1 "/sys/devices/system/soc/soc0/id"
+-
+-char scaling_gov_path[4][80] ={
+-    "sys/devices/system/cpu/cpu0/cpufreq/scaling_governor",
+-    "sys/devices/system/cpu/cpu1/cpufreq/scaling_governor",
+-    "sys/devices/system/cpu/cpu2/cpufreq/scaling_governor",
+-    "sys/devices/system/cpu/cpu3/cpufreq/scaling_governor"
+-};
+-
+-static void *qcopt_handle;
+-static void *iop_handle;
+-static int (*perf_lock_acq)(unsigned long handle, int duration,
+-    int list[], int numArgs);
+-static int (*perf_lock_rel)(unsigned long handle);
+-static int (*perf_lock_use_profile)(unsigned long handle, int profile);
+-static int (*perf_io_prefetch_start)(int, const char*);
+-static int (*perf_io_prefetch_stop)();
+-static struct list_node active_hint_list_head;
+-static int profile_handle = 0;
+-
+-static void *get_qcopt_handle()
+-{
+-    char qcopt_lib_path[PATH_MAX] = {0};
+-    void *handle = NULL;
+-
+-    dlerror();
+-
+-    if (property_get("ro.vendor.extension_library", qcopt_lib_path,
+-                NULL)) {
+-        handle = dlopen(qcopt_lib_path, RTLD_NOW);
+-        if (!handle) {
+-            ALOGE("Unable to open %s: %s\n", qcopt_lib_path,
+-                    dlerror());
+-        }
+-    }
+-
+-    return handle;
+-}
+-
+-static void *get_iop_handle()
+-{
+-    char iop_lib_path[PATH_MAX] = {0};
+-    void *handle = NULL;
+-
+-    dlerror();
+-
+-    handle = dlopen("libqti-iop-client.so", RTLD_NOW | RTLD_LOCAL);
+-    if (!handle) {
+-        ALOGE("Unable to open prefetcher: %s\n", dlerror());
+-    }
+-
+-    return handle;
+-}
+-
+-static void __attribute__ ((constructor)) initialize(void)
+-{
+-    qcopt_handle = get_qcopt_handle();
+-
+-    if (!qcopt_handle) {
+-        ALOGE("Failed to get qcopt handle.\n");
+-    } else {
+-        /*
+-         * qc-opt handle obtained. Get the perflock acquire/release
+-         * function pointers.
+-         */
+-        perf_lock_acq = dlsym(qcopt_handle, "perf_lock_acq");
+-        if (!perf_lock_acq) {
+-            goto fail_qcopt;
+-        }
+-
+-        perf_lock_rel = dlsym(qcopt_handle, "perf_lock_rel");
+-        if (!perf_lock_rel) {
+-            goto fail_qcopt;
+-        }
+-
+-        // optional
+-        perf_lock_use_profile = dlsym(qcopt_handle, "perf_lock_use_profile");
+-    }
+-
+-    iop_handle = get_iop_handle();
+-
+-    if (!iop_handle) {
+-        ALOGE("Failed to get prefetcher handle.\n");
+-    } else {
+-        perf_io_prefetch_start = (int(*)(int, const char *))dlsym(
+-                iop_handle, "perf_io_prefetch_start");
+-        if (!perf_io_prefetch_start) {
+-            goto fail_iop;
+-        }
+-
+-        perf_io_prefetch_stop = (int(*)())dlsym(
+-                iop_handle, "perf_io_prefetch_stop");
+-        if (!perf_io_prefetch_stop) {
+-            goto fail_iop;
+-        }
+-    }
+-    return;
+-
+-fail_qcopt:
+-    perf_lock_acq = NULL;
+-    perf_lock_rel = NULL;
+-    if (qcopt_handle) {
+-        dlclose(qcopt_handle);
+-        qcopt_handle = NULL;
+-    }
+-
+-fail_iop:
+-    perf_io_prefetch_start = NULL;
+-    perf_io_prefetch_stop = NULL;
+-    if (iop_handle) {
+-        dlclose(iop_handle);
+-        iop_handle = NULL;
+-    }
+-}
+-
+-static void __attribute__ ((destructor)) cleanup(void)
+-{
+-    if (qcopt_handle) {
+-        if (dlclose(qcopt_handle))
+-            ALOGE("Error occurred while closing qc-opt library.");
+-    }
+-    if (iop_handle) {
+-        if (dlclose(iop_handle))
+-            ALOGE("Error occurred while closing prefetcher library.");
+-    }
+-}
+-
+-int sysfs_read(char *path, char *s, int num_bytes)
+-{
+-    char buf[80];
+-    int count;
+-    int ret = 0;
+-    int fd = open(path, O_RDONLY);
+-
+-    if (fd < 0) {
+-        strerror_r(errno, buf, sizeof(buf));
+-        ALOGE("Error opening %s: %s\n", path, buf);
+-
+-        return -1;
+-    }
+-
+-    if ((count = read(fd, s, num_bytes - 1)) < 0) {
+-        strerror_r(errno, buf, sizeof(buf));
+-        ALOGE("Error writing to %s: %s\n", path, buf);
+-
+-        ret = -1;
+-    } else {
+-        s[count] = '\0';
+-    }
+-
+-    close(fd);
+-
+-    return ret;
+-}
+-
+-int sysfs_write(char *path, char *s)
+-{
+-    char buf[80];
+-    int len;
+-    int ret = 0;
+-    int fd = open(path, O_WRONLY);
+-
+-    if (fd < 0) {
+-        strerror_r(errno, buf, sizeof(buf));
+-        ALOGE("Error opening %s: %s\n", path, buf);
+-        return -1 ;
+-    }
+-
+-    len = write(fd, s, strlen(s));
+-    if (len < 0) {
+-        strerror_r(errno, buf, sizeof(buf));
+-        ALOGE("Error writing to %s: %s\n", path, buf);
+-
+-        ret = -1;
+-    }
+-
+-    close(fd);
+-
+-    return ret;
+-}
+-
+-int get_scaling_governor(char governor[], int size)
+-{
+-    if (sysfs_read(SCALING_GOVERNOR_PATH, governor,
+-                size) == -1) {
+-        // Can't obtain the scaling governor. Return.
+-        return -1;
+-    } else {
+-        // Strip newline at the end.
+-        int len = strlen(governor);
+-
+-        len--;
+-
+-        while (len >= 0 && (governor[len] == '\n' || governor[len] == '\r'))
+-            governor[len--] = '\0';
+-    }
+-
+-    return 0;
+-}
+-
+-int get_scaling_governor_check_cores(char governor[], int size,int core_num)
+-{
+-   if (sysfs_read(scaling_gov_path[core_num], governor,
+-               size) == -1) {
+-      // Can't obtain the scaling governor. Return.
+-      return -1;
+-   }
+-
+-   // Strip newline at the end.
+-   int len = strlen(governor);
+-   len--;
+-   while (len >= 0 && (governor[len] == '\n' || governor[len] == '\r'))
+-        governor[len--] = '\0';
+-   return 0;
+-}
+-
+-void interaction(int duration, int num_args, int opt_list[])
+-{
+-    static int lock_handle = 0;
+-
+-    if (duration <= 0 || num_args < 1 || opt_list[0] == 0)
+-        return;
+-
+-    if (qcopt_handle) {
+-        if (perf_lock_acq) {
+-            lock_handle = perf_lock_acq(lock_handle, duration, opt_list, num_args);
+-            if (lock_handle == -1)
+-                ALOGE("Failed to acquire lock.");
+-        }
+-    }
+-}
+-
+-void perform_hint_action(int hint_id, int resource_values[], int num_resources)
+-{
+-    if (qcopt_handle) {
+-        if (perf_lock_acq) {
+-            /* Acquire an indefinite lock for the requested resources. */
+-            int lock_handle = perf_lock_acq(0, 0, resource_values,
+-                    num_resources);
+-
+-            if (lock_handle == -1) {
+-                ALOGE("Failed to acquire lock.");
+-            } else {
+-                /* Add this handle to our internal hint-list. */
+-                struct hint_data *new_hint =
+-                    (struct hint_data *)malloc(sizeof(struct hint_data));
+-
+-                if (new_hint) {
+-                    if (!active_hint_list_head.compare) {
+-                        active_hint_list_head.compare =
+-                            (int (*)(void *, void *))hint_compare;
+-                        active_hint_list_head.dump = (void (*)(void *))hint_dump;
+-                    }
+-
+-                    new_hint->hint_id = hint_id;
+-                    new_hint->perflock_handle = lock_handle;
+-
+-                    if (add_list_node(&active_hint_list_head, new_hint) == NULL) {
+-                        free(new_hint);
+-                        /* Can't keep track of this lock. Release it. */
+-                        if (perf_lock_rel)
+-                            perf_lock_rel(lock_handle);
+-
+-                        ALOGE("Failed to process hint.");
+-                    }
+-                } else {
+-                    /* Can't keep track of this lock. Release it. */
+-                    if (perf_lock_rel)
+-                        perf_lock_rel(lock_handle);
+-
+-                    ALOGE("Failed to process hint.");
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-void undo_hint_action(int hint_id)
+-{
+-    if (qcopt_handle) {
+-        if (perf_lock_rel) {
+-            /* Get hint-data associated with this hint-id */
+-            struct list_node *found_node;
+-            struct hint_data temp_hint_data = {
+-                .hint_id = hint_id
+-            };
+-
+-            found_node = find_node(&active_hint_list_head,
+-                    &temp_hint_data);
+-
+-            if (found_node) {
+-                /* Release this lock. */
+-                struct hint_data *found_hint_data =
+-                    (struct hint_data *)(found_node->data);
+-
+-                if (found_hint_data) {
+-                    if (perf_lock_rel(found_hint_data->perflock_handle) == -1)
+-                        ALOGE("Perflock release failed.");
+-                }
+-
+-                if (found_node->data) {
+-                    /* We can free the hint-data for this node. */
+-                    free(found_node->data);
+-                }
+-
+-                remove_list_node(&active_hint_list_head, found_node);
+-            } else {
+-                ALOGE("Invalid hint ID.");
+-            }
+-        }
+-    }
+-}
+-
+-/*
+- * Used to release initial lock holding
+- * two cores online when the display is on
+- */
+-void undo_initial_hint_action()
+-{
+-    if (qcopt_handle) {
+-        if (perf_lock_rel) {
+-            perf_lock_rel(1);
+-        }
+-    }
+-}
+-
+-/* Set a static profile */
+-void set_profile(int profile)
+-{
+-    if (qcopt_handle) {
+-        if (perf_lock_use_profile) {
+-            profile_handle = perf_lock_use_profile(profile_handle, profile);
+-            if (profile_handle == -1)
+-                ALOGE("Failed to set profile.");
+-            if (profile < 0)
+-                profile_handle = 0;
+-        }
+-    }
+-}
+-
+-void start_prefetch(int pid, const char* packageName) {
+-    if (iop_handle) {
+-        if (perf_io_prefetch_start) {
+-            perf_io_prefetch_start(pid, packageName);
+-        }
+-    }
+-}
+-
+-int get_soc_id(void)
+-{
+-    int fd;
+-    int soc_id = -1;
+-    char buf[10] = { 0 };
+-
+-    if (!access(SOC_ID_0, F_OK))
+-        fd = open(SOC_ID_0, O_RDONLY);
+-    else
+-        fd = open(SOC_ID_1, O_RDONLY);
+-
+-    if (fd >= 0) {
+-        if (read(fd, buf, sizeof(buf) - 1) == -1)
+-            ALOGW("Unable to read soc_id");
+-        else
+-            soc_id = atoi(buf);
+-    }
+-
+-    close(fd);
+-    return soc_id;
+-}
+diff --git a/power/utils.h b/power/utils.h
+deleted file mode 100644
+index fb8d84c..0000000
+--- a/power/utils.h
++++ /dev/null
+@@ -1,47 +0,0 @@
+-/*
+- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions are
+- * met:
+- * *    * Redistributions of source code must retain the above copyright
+- *       notice, this list of conditions and the following disclaimer.
+- *     * Redistributions in binary form must reproduce the above
+- *       copyright notice, this list of conditions and the following
+- *       disclaimer in the documentation and/or other materials provided
+- *       with the distribution.
+- *     * Neither the name of The Linux Foundation nor the names of its
+- *       contributors may be used to endorse or promote products derived
+- *       from this software without specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-#include <cutils/properties.h>
+-
+-int sysfs_read(char *path, char *s, int num_bytes);
+-int sysfs_write(char *path, char *s);
+-int get_scaling_governor(char governor[], int size);
+-int get_scaling_governor_check_cores(char governor[], int size,int core_num);
+-
+-void vote_ondemand_io_busy_off();
+-void unvote_ondemand_io_busy_off();
+-void vote_ondemand_sdf_low();
+-void unvote_ondemand_sdf_low();
+-void perform_hint_action(int hint_id, int resource_values[],
+-    int num_resources);
+-void undo_hint_action(int hint_id);
+-void undo_initial_hint_action();
+-void set_profile(int profile);
+-void start_prefetch(int pid, const char *packageName);
+-int get_soc_id(void);
+-- 
+2.1.4
+
